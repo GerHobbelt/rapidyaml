@@ -65,7 +65,6 @@ constexpr const AllowedFailure allowed_failures[] = {
     _("Y79Y_004-error", "should not accept tab after -"),
     _("Y79Y_005-error", "should not accept tab after -"),
     // block scalars
-    _("2G84_00-error" , "should not accept the block literal spec"),
     _("2G84_01-error" , "should not accept the block literal spec"),
     _("5LLU-error"    , "should not accept folded scalar with wrong indented line after spaces only"),
     _("S4GJ-error"    , "should not accept text after block scalar indicator"),

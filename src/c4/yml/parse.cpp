@@ -4021,6 +4021,8 @@ csubstr Parser::_scan_block()
         {
             if( ! c4::atou(digits, &indentation))
                 _c4err("parse error: could not read decimal");
+            if( ! indentation)
+                _c4err("parse error: invalid block scalar indentation");
             _c4dbgpf("scanning block: indentation specified: {}. add {} from curr state -> {}", indentation, m_state->indref, indentation+m_state->indref);
             indentation += m_state->indref;
         }

@@ -3,6 +3,19 @@
 namespace c4 {
 namespace yml {
 
+TEST(simple_map, keys_with_leading_colon)
+{
+    Tree tree = parse_in_arena(R"(
+:foo:
+  :bar: a
+  :barbar: b
+  :barbarbar: c
+)");
+    EXPECT_EQ(tree[":foo"][":bar"].val(), "a");
+    EXPECT_EQ(tree[":foo"][":barbar"].val(), "b");
+    EXPECT_EQ(tree[":foo"][":barbarbar"].val(), "c");
+}
+
 TEST(simple_map, open_on_new_doc_without_space)
 {
     Tree tree = parse_in_arena(R"(
@@ -943,6 +956,62 @@ N(STREAM,
               N(KEYSEQ|KEYQUO,"foo5", L{N("a"),N("seq")}),
           }),
     })
+);
+
+
+ADD_CASE_TO_GROUP("issue223 0 fails",
+R"(
+            A:
+                - 1
+                - 4
+            B:
+                - 2
+                - 3
+ )",
+N(L{
+  N("A", L{N("1"), N("4")}),
+  N("B", L{N("2"), N("3")}),
+  })
+);
+
+ADD_CASE_TO_GROUP("issue223 1 passes",
+R"(A:
+  - 1
+  - 4
+B:
+  - 2
+  - 3
+)",
+N(L{
+  N("A", L{N("1"), N("4")}),
+  N("B", L{N("2"), N("3")}),
+  })
+);
+
+ADD_CASE_TO_GROUP("issue223 2 passes",
+R"(A:
+  - 1
+  - 4
+B:
+  - 2
+  - 3)",
+N(L{
+  N("A", L{N("1"), N("4")}),
+  N("B", L{N("2"), N("3")}),
+  })
+);
+ADD_CASE_TO_GROUP("issue223 3 fails",
+R"(A:
+  - 1
+  - 4
+B:
+  - 2
+  - 3
+ )",
+N(L{
+  N("A", L{N("1"), N("4")}),
+  N("B", L{N("2"), N("3")}),
+  })
 );
 }
 

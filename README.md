@@ -687,7 +687,7 @@ you can also generate a customized file suiting your particular needs
 (or commit):
 
 ```console
-[user@host rapidyaml]$ python tools/amalgamate.py -h
+[user@host rapidyaml]$ python3 tools/amalgamate.py -h
 usage: amalgamate.py [-h] [--c4core | --no-c4core] [--fastfloat | --no-fastfloat] [--stl | --no-stl] [output]
 
 positional arguments:
@@ -743,7 +743,7 @@ when cloning the repo, to ensure ryml's submodules are checked out as well:
 git clone --recursive https://github.com/biojppm/rapidyaml
 ```
 If you omit `--recursive`, after cloning you
-will have to do `git submodule init` and `git submodule update` 
+will have to do `git submodule update --init --recursive`
 to ensure ryml's submodules are checked out.
 
 ### Quickstart samples

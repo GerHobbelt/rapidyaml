@@ -213,11 +213,55 @@ broken_value: "0.30.2"
     emitrs_json(t, &out);
     EXPECT_EQ(out, R"({"string_value": "string","number_value": "9001","broken_value": "0.30.2"})");
     out.clear();
-    emitrs(t, &out);
+    emitrs_yaml(t, &out);
     EXPECT_EQ(out, R"(string_value: 'string'
 number_value: '9001'
 broken_value: '0.30.2'
 )");
+}
+
+TEST(emit_json, issue291)
+{
+    Tree t = parse_in_arena("{}");
+    t["james"] = "045";
+    auto s = emitrs_json<std::string>(t);
+    EXPECT_EQ(s, "{\"james\": \"045\"}");
+}
+
+TEST(emit_json, issue292)
+{
+    EXPECT_FALSE(csubstr("0.1.0").is_number());
+    Tree t = parse_in_arena("{}");
+    t["james"] = "1.2.3";
+    auto s = emitrs_json<std::string>(t);
+    EXPECT_EQ(s, "{\"james\": \"1.2.3\"}");
+}
+
+TEST(emit_json, issue297)
+{
+    char yml_buf[] = R"(
+comment: |
+   abc
+   def
+)";
+    Tree t = parse_in_place(yml_buf);
+    auto s = emitrs_json<std::string>(t);
+    EXPECT_EQ(s, "{\"comment\": \"abc\\ndef\\n\"}");
+}
+
+TEST(emit_json, issue297_escaped_chars)
+{
+    Tree t = parse_in_arena("{}");
+    t["quote"] = "abc\"def";
+    t["newline"] = "abc\ndef";
+    t["tab"] = "abc\tdef";
+    t["carriage"] = "abc\rdef";
+    t["backslash"] = "abc\\def";
+    t["backspace"] = "abc\bdef";
+    t["formfeed"] = "abc\fdef";
+    std::string expected = R"({"quote": "abc\"def","newline": "abc\ndef","tab": "abc\tdef","carriage": "abc\rdef","backslash": "abc\\def","backspace": "abc\bdef","formfeed": "abc\fdef"})";
+    auto actual = emitrs_json<std::string>(t);
+    EXPECT_EQ(actual, expected);
 }
 
 

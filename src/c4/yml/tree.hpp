@@ -27,6 +27,7 @@ struct NodeScalar;
 struct NodeInit;
 struct NodeData;
 class NodeRef;
+class ConstNodeRef;
 class Tree;
 
 
@@ -205,9 +206,6 @@ public:
 
 public:
 
-    C4_ALWAYS_INLINE operator NodeType_e      & C4_RESTRICT ()       { return type; }
-    C4_ALWAYS_INLINE operator NodeType_e const& C4_RESTRICT () const { return type; }
-
     C4_ALWAYS_INLINE NodeType() : type(NOTYPE) {}
     C4_ALWAYS_INLINE NodeType(NodeType_e t) : type(t) {}
     C4_ALWAYS_INLINE NodeType(type_bits t) : type((NodeType_e)t) {}
@@ -228,6 +226,14 @@ public:
 
 public:
 
+    C4_ALWAYS_INLINE operator NodeType_e      & C4_RESTRICT ()       { return type; }
+    C4_ALWAYS_INLINE operator NodeType_e const& C4_RESTRICT () const { return type; }
+
+    C4_ALWAYS_INLINE bool operator== (NodeType_e t) const { return type == t; }
+    C4_ALWAYS_INLINE bool operator!= (NodeType_e t) const { return type != t; }
+
+public:
+
     #if defined(__clang__)
     #   pragma clang diagnostic push
     #   pragma clang diagnostic ignored "-Wnull-dereference"
@@ -238,6 +244,7 @@ public:
     #   endif
     #endif
 
+    C4_ALWAYS_INLINE bool is_notype() const { return type == NOTYPE; }
     C4_ALWAYS_INLINE bool is_stream() const { return ((type & STREAM) == STREAM) != 0; }
     C4_ALWAYS_INLINE bool is_doc() const { return (type & DOC) != 0; }
     C4_ALWAYS_INLINE bool is_container() const { return (type & (MAP|SEQ|STREAM)) != 0; }
@@ -466,13 +473,9 @@ public:
 
     inline bool   empty() const { return m_size == 0; }
 
-    inline size_t size () const { return m_size; }
+    inline size_t size() const { return m_size; }
     inline size_t capacity() const { return m_cap; }
     inline size_t slack() const { RYML_ASSERT(m_cap >= m_size); return m_cap - m_size; }
-
-    inline size_t arena_size() const { return m_arena_pos; }
-    inline size_t arena_capacity() const { return m_arena.len; }
-    inline size_t arena_slack() const { RYML_ASSERT(m_arena.len >= m_arena_pos); return m_arena.len - m_arena_pos; }
 
     Callbacks const& callbacks() const { return m_callbacks; }
     void callbacks(Callbacks const& cb) { m_callbacks = cb; }
@@ -528,35 +531,43 @@ public:
     size_t root_id() const {                                 RYML_ASSERT(m_cap > 0 && m_size > 0); return 0; }
 
     //! Get a NodeRef of a node by id
-    NodeRef       ref(size_t id);
+    NodeRef      ref(size_t id);
     //! Get a NodeRef of a node by id
-    NodeRef const ref(size_t id) const;
+    ConstNodeRef ref(size_t id) const;
+    //! Get a NodeRef of a node by id
+    ConstNodeRef cref(size_t id);
+    //! Get a NodeRef of a node by id
+    ConstNodeRef cref(size_t id) const;
 
     //! Get the root as a NodeRef
-    NodeRef       rootref();
+    NodeRef      rootref();
     //! Get the root as a NodeRef
-    NodeRef const rootref() const;
+    ConstNodeRef rootref() const;
+    //! Get the root as a NodeRef
+    ConstNodeRef crootref();
+    //! Get the root as a NodeRef
+    ConstNodeRef crootref() const;
 
     //! find a root child by name, return it as a NodeRef
     //! @note requires the root to be a map.
-    NodeRef       operator[] (csubstr key);
+    NodeRef      operator[] (csubstr key);
     //! find a root child by name, return it as a NodeRef
     //! @note requires the root to be a map.
-    NodeRef const operator[] (csubstr key) const;
+    ConstNodeRef operator[] (csubstr key) const;
 
     //! find a root child by index: return the root node's @p i-th child as a NodeRef
     //! @note @i is NOT the node id, but the child's position
-    NodeRef       operator[] (size_t i);
+    NodeRef      operator[] (size_t i);
     //! find a root child by index: return the root node's @p i-th child as a NodeRef
     //! @note @i is NOT the node id, but the child's position
-    NodeRef const operator[] (size_t i) const;
+    ConstNodeRef operator[] (size_t i) const;
 
     //! get the i-th document of the stream
     //! @note @i is NOT the node id, but the doc position within the stream
-    NodeRef       docref(size_t i);
+    NodeRef      docref(size_t i);
     //! get the i-th document of the stream
     //! @note @i is NOT the node id, but the doc position within the stream
-    NodeRef const docref(size_t i) const;
+    ConstNodeRef docref(size_t i) const;
 
     /** @} */
 
@@ -784,20 +795,22 @@ public:
     /** @name modifying hierarchy */
     /** @{ */
 
-    /** create and insert a new child of "parent". insert after the (to-be)
-     * sibling "after", which must be a child of "parent". To insert as the
+    /** create and insert a new child of @p parent. insert after the (to-be)
+     * sibling @p after, which must be a child of @p parent. To insert as the
      * first child, set after to NONE */
-    inline size_t insert_child(size_t parent, size_t after)
+    C4_ALWAYS_INLINE size_t insert_child(size_t parent, size_t after)
     {
         RYML_ASSERT(parent != NONE);
         RYML_ASSERT(is_container(parent) || is_root(parent));
-        RYML_ASSERT(after == NONE || has_child(parent, after));
+        RYML_ASSERT(after == NONE || (_p(after)->m_parent == parent));
         size_t child = _claim();
         _set_hierarchy(child, parent, after);
         return child;
     }
-    inline size_t prepend_child(size_t parent) { return insert_child(parent, NONE); }
-    inline size_t  append_child(size_t parent) { return insert_child(parent, last_child(parent)); }
+    /** create and insert a node as the first child of @p parent */
+    C4_ALWAYS_INLINE size_t prepend_child(size_t parent) { return insert_child(parent, NONE); }
+    /** create and insert a node as the last child of @p parent */
+    C4_ALWAYS_INLINE size_t  append_child(size_t parent) { return insert_child(parent, _p(parent)->m_last_child); }
 
 public:
 
@@ -812,17 +825,13 @@ public:
     #endif
 
     //! create and insert a new sibling of n. insert after "after"
-    inline size_t insert_sibling(size_t node, size_t after)
+    C4_ALWAYS_INLINE size_t insert_sibling(size_t node, size_t after)
     {
-        RYML_ASSERT(node != NONE);
-        RYML_ASSERT( ! is_root(node));
-        RYML_ASSERT(parent(node) != NONE);
-        RYML_ASSERT(after == NONE || (has_sibling(node, after) && has_sibling(after, node)));
-        RYML_ASSERT(get(node) != nullptr);
-        return insert_child(get(node)->m_parent, after);
+        return insert_child(_p(node)->m_parent, after);
     }
-    inline size_t prepend_sibling(size_t node) { return insert_sibling(node, NONE); }
-    inline size_t  append_sibling(size_t node) { return insert_sibling(node, last_sibling(node)); }
+    /** create and insert a node as the first node of @p parent */
+    C4_ALWAYS_INLINE size_t prepend_sibling(size_t node) { return prepend_child(_p(node)->m_parent); }
+    C4_ALWAYS_INLINE size_t  append_sibling(size_t node) { return append_child(_p(node)->m_parent); }
 
 public:
 
@@ -935,7 +944,13 @@ public:
     /** @{ */
 
     /** get the current size of the tree's internal arena */
-    size_t arena_pos() const { return m_arena_pos; }
+    RYML_DEPRECATED("use arena_size() instead") size_t arena_pos() const { return m_arena_pos; }
+    /** get the current size of the tree's internal arena */
+    inline size_t arena_size() const { return m_arena_pos; }
+    /** get the current capacity of the tree's internal arena */
+    inline size_t arena_capacity() const { return m_arena.len; }
+    /** get the current slack of the tree's internal arena */
+    inline size_t arena_slack() const { RYML_ASSERT(m_arena.len >= m_arena_pos); return m_arena.len - m_arena_pos; }
 
     /** get the current arena */
     substr arena() const { return m_arena.first(m_arena_pos); }
@@ -1047,7 +1062,7 @@ private:
 
     substr _grow_arena(size_t more)
     {
-        size_t cap = m_arena_pos + more;
+        size_t cap = m_arena.len + more;
         cap = cap < 2 * m_arena.len ? 2 * m_arena.len : cap;
         cap = cap < 64 ? 64 : cap;
         reserve_arena(cap);

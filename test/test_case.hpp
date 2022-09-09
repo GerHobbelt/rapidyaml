@@ -39,6 +39,15 @@ inline void PrintTo(csubstr s, ::std::ostream* os) { os->write(s.str, (std::stre
 
 namespace yml {
 
+inline void PrintTo(NodeType ty, ::std::ostream* os)
+{
+    *os << ty.type_str();
+}
+inline void PrintTo(NodeType_e ty, ::std::ostream* os)
+{
+    *os << NodeType::type_str(ty);
+}
+
 inline void PrintTo(Callbacks const& cb, ::std::ostream* os)
 {
 #ifdef __GNUC__
@@ -69,11 +78,11 @@ void test_compare(Tree const& actual, size_t node_actual,
 void test_arena_not_shared(Tree const& a, Tree const& b);
 
 void test_invariants(Tree const& t);
-void test_invariants(NodeRef const n);
+void test_invariants(ConstNodeRef const& n);
 
 void print_node(CaseNode const& t, int level=0);
 void print_tree(CaseNode const& p, int level=0);
-void print_path(NodeRef const& p);
+void print_path(ConstNodeRef const& p);
 
 
 
@@ -90,7 +99,7 @@ void test_check_emit_check(csubstr yaml, CheckFn check_fn)
     }
     auto emit_and_parse = [&](const char* identifier){
         SCOPED_TRACE(identifier);
-        std::string emitted = emitrs<std::string>(t);
+        std::string emitted = emitrs_yaml<std::string>(t);
         #ifdef RYML_DBG
         printf("~~~%s~~~\n%.*s", identifier, (int)emitted.size(), emitted.data());
         #endif
@@ -413,8 +422,8 @@ public:
 
 public:
 
-    void compare(yml::NodeRef const& n, bool ignore_quote=false) const;
-    void compare_child(yml::NodeRef const& n, size_t pos) const;
+    void compare(yml::ConstNodeRef const& n, bool ignore_quote=false) const;
+    void compare_child(yml::ConstNodeRef const& n, size_t pos) const;
 
     size_t reccount() const
     {
@@ -435,6 +444,7 @@ public:
 typedef enum {
     EXPECT_PARSE_ERROR = (1<<0),
     RESOLVE_REFS = (1<<1),
+    JSON_ALSO = (1<<2), // TODO: make it the opposite: opt-out instead of opt-in
 } TestCaseFlags_e;
 
 
@@ -467,12 +477,22 @@ struct CaseDataLineEndings
     Tree parsed_tree;
 
     size_t numbytes_stdout;
-    std::vector<char> emit_buf;
+    size_t numbytes_stdout_json;
+
+    std::string emit_buf;
     csubstr emitted_yml;
-    std::vector<char> parse_buf;
+
+    std::string emitjson_buf;
+    csubstr emitted_json;
+
+    std::string parse_buf;
     substr parsed_yml;
 
+    std::string parse_buf_json;
+    substr parsed_json;
+
     Tree emitted_tree;
+    Tree emitted_tree_json;
 
     Tree recreated;
 };
@@ -481,7 +501,9 @@ struct CaseDataLineEndings
 struct CaseData
 {
     CaseDataLineEndings unix_style;
+    CaseDataLineEndings unix_style_json;
     CaseDataLineEndings windows_style;
+    CaseDataLineEndings windows_style_json;
 };
 
 

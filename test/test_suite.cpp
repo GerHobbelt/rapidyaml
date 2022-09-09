@@ -200,9 +200,9 @@ struct ProcLevel
 
     void _resolve_if_needed()
     {
-        const NodeRef root = tree.rootref();
-        bool has_anchors_or_refs = root.visit([](NodeRef const* node, size_t /*level*/){
-            return (node->is_anchor() || node->is_ref());
+        ConstNodeRef root = tree.rootref();
+        bool has_anchors_or_refs = root.visit([](ConstNodeRef const& node, size_t /*level*/){
+            return (node.is_anchor() || node.is_ref());
         });
         if(has_anchors_or_refs)
         {
@@ -220,7 +220,7 @@ struct ProcLevel
             _nfo_logf("level[{}] not parsed. parse!", level);
             parse();
         }
-        emitrs(tree, &emitted);
+        emitrs_yaml(tree, &emitted);
         csubstr ss = to_csubstr(emitted);
         if(ss.ends_with("\n...\n"))
             emitted.resize(emitted.size() - 4);

@@ -17,7 +17,7 @@ bb:
 cc: 
 )";
     Tree t = parse_in_arena(yaml);
-    auto s = emitrs<std::string>(t);
+    auto s = emitrs_yaml<std::string>(t);
     EXPECT_EQ(expected, s);
 }
 
@@ -35,7 +35,7 @@ bb:
 cc: 
 )";
     Tree t = parse_in_arena(yaml);
-    auto s = emitrs<std::string>(t);
+    auto s = emitrs_yaml<std::string>(t);
     EXPECT_EQ(expected, s);
 }
 
@@ -70,8 +70,11 @@ R"(--- !!set
 ? bb
 ? cc
 )",
-N(STREAM, L{N(DOCMAP, TL("!!set", L{N(KEYVAL, "aa", /*"~"*/{}), N(KEYVAL, "bb", /*"~"*/{}), N(KEYVAL, "cc", /*"~"*/{})}))})
-);
+N(STREAM, L{N(DOCMAP, TL("!!set", L{
+  N(KEYVAL, "aa", /*"~"*/{}),
+  N(KEYVAL, "bb", /*"~"*/{}),
+  N(KEYVAL, "cc", /*"~"*/{})})
+)}));
 
 ADD_CASE_TO_GROUP("sets 2XXW",
 R"(

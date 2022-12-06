@@ -149,7 +149,7 @@ bool _visit_stacked(NodeRefType &node, Visitor fn, size_t indentation_level, boo
 template<class Impl, class ConstImpl>
 struct RoNodeMethods
 {
-    C4_SUPPRESS_WARNING_CLANG_WITH_PUSH("-Wcast-align")
+    C4_SUPPRESS_WARNING_GCC_CLANG_WITH_PUSH("-Wcast-align")
     // helper CRTP macros, undefined at the end
     #define tree_ ((ConstImpl const* C4_RESTRICT)this)->m_tree
     #define id_ ((ConstImpl const* C4_RESTRICT)this)->m_id
@@ -541,7 +541,7 @@ public:
     #undef id_
     #undef id__
 
-    C4_SUPPRESS_WARNING_CLANG_POP
+    C4_SUPPRESS_WARNING_GCC_CLANG_POP
 };
 
 } // namespace detail
@@ -1112,7 +1112,9 @@ public:
 
 public:
 
-    /** change the node's position within its parent */
+    /** change the node's position within its parent. To move to the
+     * first position in the parent, simply pass an empty or
+     * default-constructed reference like this: `n.move({})`, which is equivalent to */
     inline void move(ConstNodeRef const& after)
     {
         _C4RV();
@@ -1125,7 +1127,6 @@ public:
     inline void move(NodeRef const& parent, ConstNodeRef const& after)
     {
         _C4RV();
-        RYML_ASSERT(parent.m_tree == after.m_tree);
         if(parent.m_tree == m_tree)
         {
             m_tree->move(m_id, parent.m_id, after.m_id);

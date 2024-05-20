@@ -1,24 +1,4 @@
 // ryml: quickstart
-//
-// This file does a quick tour of ryml. It has multiple self-contained
-// and commented samples that illustrate how to use ryml, and how it
-// works. Although this is not a unit test, the samples are written as
-// a sequence of actions and predicate checks to better convey what is
-// the expected result at any stage. And to ensure the code here is
-// correct and up to date, it's also run as part of the CI tests.
-//
-// The directories that exist side-by-side with this file contain
-// several examples on how to build this with cmake, such that you can
-// hit the ground running. I suggest starting first with the
-// add_subdirectory example, treating it just like any other
-// self-contained cmake project.
-//
-// If something is unclear, please open an issue or send a pull
-// request at https://github.com/biojppm/rapidyaml . If you have an
-// issue while using ryml, it is also encouraged to try to reproduce
-// the issue here, or look first through the relevant section.
-//
-// Happy ryml'ing!
 
 
 //-----------------------------------------------------------------------------
@@ -48,12 +28,14 @@
 
 //-----------------------------------------------------------------------------
 
+/** @cond dev */
 // CONTENTS:
 //
 // (Each function addresses a topic and is fully self-contained. Jump
 // to the function to find out about its topic.)
 namespace sample {
-void sample_quick_overview();       ///< briefly skim over most of the features
+void sample_lightning_overview();   ///< lightning overview of most common features
+void sample_quick_overview();       ///< quick overview of most common features
 void sample_substr();               ///< about ryml's string views (from c4core)
 void sample_parse_file();           ///< ready-to-go example of parsing a file from disk
 void sample_parse_in_place();       ///< parse a mutable YAML source buffer
@@ -65,6 +47,7 @@ void sample_iterate_trees();        ///< visit individual nodes and iterate thro
 void sample_create_trees();         ///< programatically create trees
 void sample_tree_arena();           ///< interact with the tree's serialization arena
 void sample_fundamental_types();    ///< serialize/deserialize fundamental types
+void sample_empty_null_values();    ///< serialize/deserialize/query empty or null values
 void sample_formatting();           ///< control formatting when serializing/deserializing
 void sample_base64();               ///< encode/decode base64
 void sample_user_scalar_types();    ///< serialize/deserialize scalar (leaf/string) types
@@ -90,6 +73,7 @@ int  report_checks();
 
 int main()
 {
+    sample::sample_lightning_overview();
     sample::sample_quick_overview();
     sample::sample_substr();
     sample::sample_parse_file();
@@ -102,6 +86,7 @@ int main()
     sample::sample_create_trees();
     sample::sample_tree_arena();
     sample::sample_fundamental_types();
+    sample::sample_empty_null_values();
     sample::sample_formatting();
     sample::sample_base64();
     sample::sample_user_scalar_types();
@@ -125,6 +110,8 @@ int main()
     return sample::report_checks();
 }
 
+/** @endcond */
+
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -137,10 +124,81 @@ C4_SUPPRESS_WARNING_GCC("-Wuseless-cast")
 
 namespace sample {
 
-bool report_check(int line, const char *predicate, bool result);
-#ifdef __GNUC__
-#if __GNUC__ == 4 && __GNUC_MINOR__ >= 8
-struct CheckPredicate {
+/** @addtogroup doc_quickstart
+ *
+ * This file does a quick tour of ryml. It has multiple self-contained
+ * and well-commented samples that illustrate how to use ryml, and how
+ * it works.
+ *
+ * Although this is not a unit test, the samples are written as a
+ * sequence of actions and predicate checks to better convey what is
+ * the expected result at any stage. And to ensure the code here is
+ * correct and up to date, it's also run as part of the CI tests.
+ *
+ * If something is unclear, please open an issue or send a pull
+ * request at https://github.com/biojppm/rapidyaml . If you have an
+ * issue while using ryml, it is also encouraged to try to reproduce
+ * the issue here, or look first through the relevant section.
+ *
+ * Happy ryml'ing!
+ *
+ * ### Some guidance on building
+ *
+ * The directories that exist side-by-side with this file contain
+ * several examples on how to build this with cmake, such that you can
+ * hit the ground running. See [the relevant section of the main
+ * README](https://github.com/biojppm/rapidyaml/tree/v0.5.0?tab=readme-ov-file#quickstart-samples)
+ * for an overview of the different choices. I suggest starting first
+ * with the `add_subdirectory` example, treating it just like any
+ * other self-contained cmake project.
+ *
+ * Or very quickly, to build and run this sample on your PC, start by
+ * creating this `CMakeLists.txt`:
+ * ```cmake
+ * cmake_minimum_required(VERSION 3.13)
+ * project(ryml-quickstart LANGUAGES CXX)
+ * include(FetchContent)
+ * FetchContent_Declare(ryml
+ *     GIT_REPOSITORY https://github.com/biojppm/rapidyaml.git
+ *     GIT_TAG v0.5.0
+ *     GIT_SHALLOW FALSE  # ensure submodules are checked out
+ * )
+ * FetchContent_MakeAvailable(ryml)
+ * add_executable(ryml-quickstart ${ryml_SOURCE_DIR}/samples/quickstart.cpp)
+ * target_link_libraries(ryml-quickstart ryml::ryml)
+ * add_custom_target(run ryml-quickstart
+ *     COMMAND $<TARGET_FILE:ryml-quickstart>
+ *     DEPENDS ryml-quickstart
+ *     COMMENT "running: $<TARGET_FILE:ryml-quickstart>")
+ * ```
+ * Now run the following commands in the same folder:
+ * ```bash
+ * # configure the project
+ * cmake -S . -B build
+ * # build and run
+ * cmake --build build --target ryml-quickstart -j
+ * # optionally, open in your IDE
+ * cmake --open build
+ * ```
+ *
+ * @{ */
+
+//-----------------------------------------------------------------------------
+// first, some helpers used in this quickstart
+
+/** @defgroup doc_sample_helpers Sample helpers
+ * @brief Functions and classes used in the examples of this sample.
+ * @addtogroup doc_sample_helpers
+ * @{ */
+
+
+// GCC 4.8 has a problem with the CHECK() macro
+#ifndef _DOXYGEN_
+#if (defined(__GNUC__) && (__GNUC__ == 4 && __GNUC_MINOR__ >= 8))
+/// a quick'n'dirty assertion to verify a predicate
+#define CHECK CheckPredicate{__FILE__, __LINE__}
+struct CheckPredicate
+{
     const char *file;
     const int line;
 
@@ -152,14 +210,103 @@ struct CheckPredicate {
         }
     }
 };
-#define CHECK CheckPredicate{__FILE__, __LINE__}
-#endif
-#endif
-
-#if !defined(CHECK)
-/// a quick'n'dirty assertion to verify a predicate
+#else
+/** a quick'n'dirty assertion to verify a predicate */
 #define CHECK(predicate) do { if(!report_check(__LINE__, #predicate, (predicate))) { RYML_DEBUG_BREAK(); } } while(0)
 #endif
+#else
+// enable doxygen to link to the functions called inside CHECK()
+#define CHECK(predicate) assert(predicate)
+#endif
+
+
+bool report_check(int line, const char *predicate, bool result);
+
+// helper functions for sample_parse_file()
+template<class CharContainer> CharContainer file_get_contents(const char *filename);
+template<class CharContainer> size_t        file_get_contents(const char *filename, CharContainer *v);
+template<class CharContainer> void          file_put_contents(const char *filename, CharContainer const& v, const char* access="wb");
+void                                        file_put_contents(const char *filename, const char *buf, size_t sz, const char* access);
+
+
+/** this is an example error handler, required for some of the
+ * quickstart examples. */
+struct ErrorHandlerExample
+{
+    ryml::Callbacks callbacks();
+    C4_NORETURN void on_error(const char* msg, size_t len, ryml::Location loc);
+    C4_NORETURN static void s_error(const char* msg, size_t len, ryml::Location loc, void *this_);
+    template<class Fn> C4_NODISCARD bool check_error_occurs(Fn &&fn) const;
+    template<class Fn> C4_NODISCARD bool check_assertion_occurs(Fn &&fn) const;
+    void check_effect(bool committed) const;
+    ErrorHandlerExample() : defaults(ryml::get_callbacks()) {}
+    ryml::Callbacks defaults;
+};
+/** Shows how to easily create a scoped error handler. */
+struct ScopedErrorHandlerExample : public ErrorHandlerExample
+{
+    ScopedErrorHandlerExample() : ErrorHandlerExample() { ryml::set_callbacks(callbacks()); check_effect(true); }
+    ~ScopedErrorHandlerExample() { ryml::set_callbacks(defaults); check_effect(false); }
+};
+
+/** @} */ // doc_sample_helpers
+
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+/** a lightning tour over most features
+ * see @ref sample_quick_overview */
+void sample_lightning_overview()
+{
+    // Parse YAML code in place, potentially mutating the buffer:
+    char yml_buf[] = "{foo: 1, bar: [2, 3], john: doe}";
+    ryml::Tree tree = ryml::parse_in_place(yml_buf);
+
+    // read from the tree:
+    ryml::NodeRef bar = tree["bar"];
+    CHECK(bar[0].val() == "2");
+    CHECK(bar[1].val() == "3");
+    CHECK(bar[0].val().str == yml_buf + 15); // points at the source buffer
+    CHECK(bar[1].val().str == yml_buf + 18);
+
+    // deserializing:
+    int bar0 = 0, bar1 = 0;
+    bar[0] >> bar0;
+    bar[1] >> bar1;
+    CHECK(bar0 == 2);
+    CHECK(bar1 == 3);
+
+    // serializing:
+    bar[0] << 10; // creates a string in the tree's arena
+    bar[1] << 11;
+    CHECK(bar[0].val() == "10");
+    CHECK(bar[1].val() == "11");
+
+    // add nodes
+    bar.append_child() << 12; // see also operator= (explanation below)
+    CHECK(bar[2].val() == "12");
+
+    // emit tree
+    // to std::string
+    CHECK(ryml::emitrs_yaml<std::string>(tree) == R"(foo: 1
+bar:
+  - 10
+  - 11
+  - 12
+john: doe
+)");
+    std::cout << tree; // emit to stdout
+    ryml::emit_yaml(tree, stdout); // emit to file
+
+    // emit node
+    ryml::ConstNodeRef foo = tree["foo"];
+    // to std::string
+    CHECK(ryml::emitrs_yaml<std::string>(foo) == "foo: 1\n");
+    std::cout << foo; // emit node to stdout
+    ryml::emit_yaml(foo, stdout); // emit node to file
+}
 
 
 //-----------------------------------------------------------------------------
@@ -185,6 +332,8 @@ void sample_quick_overview()
     //   - reuse an existing tree (advised)
     //
     //   - reuse an existing parser (advised)
+    //
+    //   - parse into an existing node deep in a tree
     //
     // Note: it will always be significantly faster to parse in place
     // and reuse tree+parser.
@@ -377,7 +526,6 @@ void sample_quick_overview()
         CHECK(seq_node.is_seq());              // seq is a container
         //CHECK(seq_node.val_is_null() BOOM!); // so cannot get the val to check
     }
-
 
     // By default, assertions are enabled unless the NDEBUG macro is
     // defined (which happens in release builds).
@@ -602,6 +750,44 @@ void sample_quick_overview()
 
 
     //------------------------------------------------------------------
+    // .operator[]() vs .at()
+
+    // (Const)NodeRef::operator[]() is an analogue to std::vector::operator[].
+    // (Const)NodeRef::at() is an analogue to std::vector::at()
+    //
+    // at() will always check the subject node is .readable().
+    //
+    // [] is meant for the happy path, and unverified in Release
+    // builds.
+    {
+        // in this example we will be checking errors, so set up a
+        // temporary error handler to catch them:
+        ScopedErrorHandlerExample errh;
+        // instantiate the tree after errh
+        ryml::Tree err_tree = ryml::parse_in_arena("{foo: bar}");
+        // ... so that the tree uses the current callbacks:
+        CHECK(err_tree.callbacks() == errh.callbacks());
+        // node does not exist, only a seed node
+        ryml::NodeRef seed_node = err_tree["this"];
+        // ... therefore not .readable()
+        CHECK(!seed_node.readable());
+        // using .at() reliably produces an error:
+        CHECK(errh.check_error_occurs([&]{
+            return seed_node.at("is").at("an").at("invalid").at("operation");
+            //              ^
+            //              error occurs here because it is unreadable
+        }));
+        // ... but using [] fails only when RYML_USE_ASSERT is
+        // defined. otherwise, it's the dreaded Undefined Behavior:
+        CHECK(errh.check_assertion_occurs([&]{
+            return seed_node["is"]["an"]["invalid"]["operation"];
+            //              ^
+            //              assertion occurs here because it is unreadable
+        }));
+    }
+
+
+    //------------------------------------------------------------------
     // Emitting:
 
     ryml::csubstr expected_result = R"(foo: says who
@@ -674,6 +860,26 @@ I am something: indeed
     CHECK(constnoderef == noderef);
     CHECK(!(constnoderef != noderef));
 
+
+    //------------------------------------------------------------------
+    // Getting the location of nodes in the source:
+    //
+    // Location tracking is opt-in:
+    ryml::Parser parser(ryml::ParserOptions().locations(true));
+    // Now the parser will start by building the accelerator structure:
+    ryml::Tree tree2;
+    parser.parse_in_arena("expected.yml", expected_result, &tree2);
+    // ... and use it when querying
+    ryml::ConstNodeRef subject_node = tree2["bar"][1];
+    CHECK(subject_node.val() == "30");
+    ryml::Location loc = parser.location(subject_node);
+    CHECK(parser.location_contents(loc).begins_with("30"));
+    CHECK(loc.line == 3u);
+    CHECK(loc.col == 4u);
+    // For further details in location tracking,
+    // refer to the sample function below.
+
+
     //------------------------------------------------------------------
     // Dealing with UTF8
     ryml::Tree langs = ryml::parse_in_arena(R"(
@@ -702,27 +908,12 @@ neither this: '\u2705 \U0001D11E'
     CHECK(langs["and this as well"].val() == "✅ 𝄞");
     CHECK(langs["not decoded"].val() == "\\u263A \\xE2\\x98\\xBA");
     CHECK(langs["neither this"].val() == "\\u2705 \\U0001D11E");
-
-    //------------------------------------------------------------------
-    // Getting the location of nodes in the source:
-    //
-    // Location tracking is opt-in:
-    ryml::Parser parser(ryml::ParserOptions().locations(true));
-    // Now the parser will start by building the accelerator structure:
-    ryml::Tree tree2 = parser.parse_in_arena("expected.yml", expected_result);
-    // ... and use it when querying
-    ryml::Location loc = parser.location(tree2["bar"][1]);
-    CHECK(parser.location_contents(loc).begins_with("30"));
-    CHECK(loc.line == 3u);
-    CHECK(loc.col == 4u);
-    // For further details in location tracking,
-    // refer to the sample function below.
 }
 
 
 //-----------------------------------------------------------------------------
 
-/** demonstrate usage of ryml::substr/ryml::csubstr
+/** demonstrate usage of ryml::substr and ryml::csubstr
  *
  * These types are imported from the c4core library into the ryml
  * namespace You may have noticed above the use of a `csubstr`
@@ -736,10 +927,7 @@ neither this: '\u2705 \U0001D11E'
  * fact, `c4::csubstr` and its writeable counterpart `c4::substr` are
  * the workhorses of the ryml parsing and serialization code.
  *
- * @see https://c4core.docsforge.com/master/api/c4/basic_substring/
- * @see https://c4core.docsforge.com/master/api/c4/#substr
- * @see https://c4core.docsforge.com/master/api/c4/#csubstr
- */
+ * @see doc_substr */
 void sample_substr()
 {
     // substr is a mutable view: pointer and length to a string in memory.
@@ -762,7 +950,7 @@ void sample_substr()
         ryml::csubstr s = foobar_str;
         CHECK(s == "foobar");
         CHECK(s != "foobar0");
-        CHECK(s.size() == 6);
+        CHECK(s.size() == 6); // does not include the terminating \0
         CHECK(s.data() == foobar_str);
         CHECK(s.size() == s.len);
         CHECK(s.data() == s.str);
@@ -1531,12 +1719,6 @@ void sample_substr()
 
 //-----------------------------------------------------------------------------
 
-// helper functions for sample_parse_file()
-template<class CharContainer> CharContainer file_get_contents(const char *filename);
-template<class CharContainer> size_t        file_get_contents(const char *filename, CharContainer *v);
-template<class CharContainer> void          file_put_contents(const char *filename, CharContainer const& v, const char* access="wb");
-void                                        file_put_contents(const char *filename, const char *buf, size_t sz, const char* access);
-
 
 /** demonstrate how to load a YAML file from disk to parse with ryml.
  *
@@ -1549,7 +1731,8 @@ void                                        file_put_contents(const char *filena
  *  are many ways to achieve this in C++, but for convenience and to
  *  enable you to quickly get up to speed, here is an example
  *  implementation loading a file from disk and then parsing the
- *  resulting buffer with ryml. */
+ *  resulting buffer with ryml.
+ * @see doc_parse  */
 void sample_parse_file()
 {
     const char filename[] = "ryml_example.yml";
@@ -1589,7 +1772,8 @@ void sample_parse_file()
 
 //-----------------------------------------------------------------------------
 
-/** demonstrate in-place parsing of a mutable YAML source buffer. */
+/** demonstrate in-place parsing of a mutable YAML source buffer.
+ * @see doc_parse  */
 void sample_parse_in_place()
 {
     // Like the name suggests, parse_in_place() directly mutates the
@@ -1642,7 +1826,8 @@ void sample_parse_in_place()
 
 //-----------------------------------------------------------------------------
 
-/** demonstrate parsing of a read-only YAML source buffer */
+/** demonstrate parsing of a read-only YAML source buffer
+ * @see doc_parse  */
 void sample_parse_in_arena()
 {
     // to parse read-only memory, ryml will copy first to the tree's
@@ -1687,7 +1872,8 @@ void sample_parse_in_arena()
 
 //-----------------------------------------------------------------------------
 
-/** demonstrate reuse/modification of tree when parsing */
+/** demonstrate reuse/modification of tree when parsing
+ * @see doc_parse */
 void sample_parse_reuse_tree()
 {
     ryml::Tree tree;
@@ -1841,7 +2027,8 @@ bar2:
 //-----------------------------------------------------------------------------
 
 /** Demonstrates reuse of an existing parser. Doing this is
-    recommended when multiple files are parsed. */
+ * recommended when multiple files are parsed.
+ * @see doc_parse */
 void sample_parse_reuse_parser()
 {
     ryml::Parser parser;
@@ -1875,7 +2062,8 @@ void sample_parse_reuse_parser()
 //-----------------------------------------------------------------------------
 
 /** for ultimate speed when parsing multiple times, reuse both the
-    tree and parser */
+ * tree and parser
+ * @see doc_parse */
 void sample_parse_reuse_tree_and_parser()
 {
     ryml::Tree tree;
@@ -1931,7 +2119,10 @@ void sample_parse_reuse_tree_and_parser()
 
 //-----------------------------------------------------------------------------
 
-/** shows how to programatically iterate through trees */
+/** shows how to programatically iterate through trees
+ * @see doc_tree
+ * @see doc_node_classes
+ */
 void sample_iterate_trees()
 {
     const ryml::Tree tree = ryml::parse_in_arena(R"(doe: "a deer, a female deer"
@@ -1994,7 +2185,10 @@ cars: GTO
 
 //-----------------------------------------------------------------------------
 
-/** shows how to programatically create trees */
+/** shows how to programatically create trees
+ * @see doc_tree
+ * @see doc_node_classes
+ * */
 void sample_create_trees()
 {
     ryml::NodeRef doe;
@@ -2233,10 +2427,15 @@ void sample_tree_arena()
 
 //-----------------------------------------------------------------------------
 
-/** ryml provides facilities for serializing the C++ fundamental
-    types, including boolean and null values. This is achieved through
-    to_chars()/from_chars().  See an example below for user scalar
-    types. */
+/** ryml provides facilities for serializing and deserializing the C++
+    fundamental types, including boolean and null values; this is
+    provided by the several overloads in @ref doc_to_chars and @ref
+    doc_from_chars. To add serialization for user scalar types (ie,
+    those types that should be serialized as strings in leaf nodes),
+    you just need to define the appropriate overloads of to_chars and
+    from_chars for those types; see @ref sample_user_scalar_types for
+    an example on how to achieve this, and see @ref doc_serialization
+    for more information on serialization. */
 void sample_fundamental_types()
 {
     ryml::Tree tree;
@@ -2295,9 +2494,17 @@ void sample_fundamental_types()
     tree["nan" ] >> f; CHECK(std::isnan(f));
     tree["nan" ] >> d; CHECK(std::isnan(d));
     C4_SUPPRESS_WARNING_GCC_CLANG_POP
+}
 
+
+//-----------------------------------------------------------------------------
+
+/** Shows how to deal with empty/null values. See also @ref
+ * c4::yml::Tree::val_is_null */
+void sample_empty_null_values()
+{
     // reading empty/null values - see also sample_formatting()
-    tree = ryml::parse_in_arena(R"(
+    ryml::Tree tree = ryml::parse_in_arena(R"(
 plain:
 squoted: ''
 dquoted: ""
@@ -2306,6 +2513,26 @@ folded: >
 all_null: [~, null, Null, NULL]
 non_null: [nULL, non_null, non null, null it is not]
 )");
+    // first, remember that .has_val() is a structural predicate
+    // indicating the node is a leaf, and not a container.
+    CHECK(tree["plain"].has_val()); // has a val, even if it's empty!
+    CHECK(tree["squoted"].has_val());
+    CHECK(tree["dquoted"].has_val());
+    CHECK(tree["literal"].has_val());
+    CHECK(tree["folded"].has_val());
+    CHECK( ! tree["all_null"].has_val());
+    CHECK( ! tree["non_null"].has_val());
+    // In essence, has_val() is the logical opposite of is_container()
+    CHECK( ! tree["plain"].is_container());
+    CHECK( ! tree["squoted"].is_container());
+    CHECK( ! tree["dquoted"].is_container());
+    CHECK( ! tree["literal"].is_container());
+    CHECK( ! tree["folded"].is_container());
+    CHECK(tree["all_null"].is_container());
+    CHECK(tree["non_null"].is_container());
+    //
+    // Right. How about the contents of each val?
+    //
     // all of these scalars have zero-length:
     CHECK(tree["plain"].val().len == 0);
     CHECK(tree["squoted"].val().len == 0);
@@ -2327,24 +2554,28 @@ non_null: [nULL, non_null, non null, null it is not]
     CHECK(tree["literal"].val() != nullptr);
     CHECK(tree["folded"].val() != nullptr);
     // the tree and node classes provide the corresponding predicate
-    // functions .key_is_val() and .val_is_null():
-    CHECK(tree["plain"].val_is_null()); // requires same preconditions as .val()
+    // functions .key_is_null() and .val_is_null().
+    // (note that these functions have the same preconditions as .val(),
+    // because they need get the val to look into its contents)
+    CHECK(tree["plain"].val_is_null());
     CHECK( ! tree["squoted"].val_is_null());
     CHECK( ! tree["dquoted"].val_is_null());
     CHECK( ! tree["literal"].val_is_null());
     CHECK( ! tree["folded"].val_is_null());
+    // matching to null is case-sensitive. only the cases shown here
+    // match to null:
     for(ryml::ConstNodeRef child : tree["all_null"].children())
     {
         CHECK(child.val() != nullptr); // it is pointing at a string, so it is not nullptr!
         CHECK(child.val_is_null());
     }
-    // matching to null is case-sensitive. only the cases shown above
-    // match to null:
     for(ryml::ConstNodeRef child : tree["non_null"].children())
     {
         CHECK(child.val() != nullptr);
         CHECK( ! child.val_is_null());
     }
+    //
+    //
     // Because the meaning of null/~/empty will vary from application
     // to application, ryml makes no assumption on what should be
     // serialized as null. It leaves this decision to the user. But
@@ -2372,8 +2603,7 @@ non_null: [nULL, non_null, non null, null it is not]
     // serializes as the normal '~' string:
     tree["str_tilde"] << tilde; CHECK(tree.arena() == "null~");
     // this is the resulting yaml:
-    CHECK(ryml::emitrs_yaml<std::string>(tree) ==
-          R"(empty_null: 
+    CHECK(ryml::emitrs_yaml<std::string>(tree) == R"(empty_null: 
 empty_nonnull: ''
 str_null: null
 str_tilde: ~
@@ -2391,9 +2621,7 @@ str_tilde: ~
     tree["str_null"] << null_if_nullptr(strnull);
     tree["str_tilde"] << null_if_nullptr(tilde);
     // this is the resulting yaml:
-std::cout << tree;
-    CHECK(ryml::emitrs_yaml<std::string>(tree) ==
-          R"(empty_null: null
+    CHECK(ryml::emitrs_yaml<std::string>(tree) == R"(empty_null: null
 empty_nonnull: ''
 str_null: null
 str_tilde: ~
@@ -2409,8 +2637,7 @@ str_tilde: ~
     tree["str_null"] << null_if_predicate(strnull);
     tree["str_tilde"] << null_if_predicate(tilde);
     // this is the resulting yaml:
-    CHECK(ryml::emitrs_yaml<std::string>(tree) ==
-          R"(empty_null: null
+    CHECK(ryml::emitrs_yaml<std::string>(tree) == R"(empty_null: null
 empty_nonnull: ''
 str_null: null
 str_tilde: null
@@ -2426,8 +2653,7 @@ str_tilde: null
     tree["str_null"] << tilde_if_predicate(strnull);
     tree["str_tilde"] << tilde_if_predicate(tilde);
     // this is the resulting yaml:
-    CHECK(ryml::emitrs_yaml<std::string>(tree) ==
-          R"(empty_null: ~
+    CHECK(ryml::emitrs_yaml<std::string>(tree) == R"(empty_null: ~
 empty_nonnull: ''
 str_null: ~
 str_tilde: ~
@@ -2437,11 +2663,10 @@ str_tilde: ~
 
 //-----------------------------------------------------------------------------
 
-/** ryml provides facilities for formatting (imported from c4core into
- * the ryml namespace)
- *
- * @see https://c4core.docsforge.com/master/formatting-arguments/
- * @see https://c4core.docsforge.com/master/formatting-strings/
+/** ryml provides facilities for formatting/deformatting (imported
+ * from c4core into the ryml namespace). See @ref doc_format_utils
+ * . These functions are very useful to serialize and deserialize
+ * scalar types; see @ref doc_serialization .
  */
 void sample_formatting()
 {
@@ -2891,7 +3116,7 @@ void sample_formatting()
 //-----------------------------------------------------------------------------
 
 /** demonstrates how to read and write base64-encoded blobs.
- @see https://c4core.docsforge.com/master/base64/
+ @see @ref doc_base64
  */
 void sample_base64()
 {
@@ -3074,43 +3299,156 @@ QmVsaWtlIGZvciB3YW50IG9mIHJhaW4sIHdoaWNoIEkgY291bGQgd2VsbCBiZXRlZW0gdGhlbSBmcm9t
 
 
 //-----------------------------------------------------------------------------
+// Serialization info
 
+} // namespace sample  // because we want the doxygen document above to show up in the proper place
+/** @addtogroup doc_serialization
+ *
+ * ## Fundamental types
+ *
+ * ryml provides serialization/deserialization utilities for all
+ * fundamental data types in @ref doc_charconv .
+ *
+ *  - See @ref sample::sample_fundamental_types() for basic examples
+ *    of serialization of fundamental types.
+ *  - See @ref sample::sample_empty_null_values() for different ways
+ *    to serialize and deserialize empty and null values/
+ *  - When serializing floating point values in C++ earlier than
+ *    17, be aware that there may be a truncation of the precision
+ *    with the default float/double implementations of @ref
+ *    doc_to_chars. To enforce a particular precision, use for
+ *    example @ref c4::fmt::real, or call directly @ref c4::ftoa() or
+ *    @ref c4::dtoa(), or any other method (remember that ryml only
+ *    stores the final string in the tree, so nothing prevents you from
+ *    creating it in whatever way is most suitable). See the relevant
+ *    sample: @ref sample::sample_float_precision().
+ *  - You can also serialize and deserialize base64: see @ref
+ *    doc_base64 and @ref sample::sample_base64
+ *
+ * To serialize/deserialize any non-fundamental type will require
+ * that you instruct ryml on how to achieve this. That will differ
+ * based on whether the type is scalar or container.
+ *
+ *
+ * ## User scalar types
+ *
+ * See @ref doc_sample_scalar_types for serializing user scalar types
+ *   (ie leaf nodes in the YAML tree, containing a string
+ *   representation):
+ *
+ *  - See examples on how to @ref doc_sample_to_chars_scalar
+ *  - See examples on how to @ref doc_sample_from_chars_scalar
+ *  - See the sample @ref sample::sample_user_scalar_types
+ *  - See the sample @ref sample::sample_formatting for examples
+ *    of functions from @ref doc_format_utils that will be very
+ *    helpful in implementing custom `to_chars()`/`from_chars()`
+ *    functions.
+ *  - See @ref doc_charconv for the implementations of
+ *    `to_chars()`/`from_chars()` for the fundamental types.
+ *  - See @ref doc_substr and @ref sample::sample_substr() for the
+ *    many useful utilities in the substring class.
+ *
+ *
+ * ## User container types
+ *
+ * - See @ref doc_sample_container_types for when the type is a
+ *   container (ie, a node which has children, which may themselves be
+ *   containers).
+ *
+ *   - See the sample @ref sample::sample_user_container_types
+ *
+ *   - See the sample @ref sample::sample_std_types, and also...
+ *
+ *
+ * ## STL types
+ *
+ * ryml does not use any STL containers internally, but it can be
+ * used to serialize and deserialize these containers. See @ref
+ * sample::sample_std_types() for an example. See the header @ref
+ * ryml_std.hpp and also the headers it includes:
+ *
+ *  - scalar types:
+ *    - for `std::string`: @ref ext/c4core/src/c4/std/string.hpp
+ *    - for `std::string_view`: @ref ext/c4core/src/c4/std/string_view.hpp
+ *    - for `std::vector<char>`: @ref ext/c4core/src/c4/std/vector.hpp
+ *  - container types:
+ *    - for `std::vector<T>`: @ref src/c4/yml/std/vector.hpp
+ *    - for `std::map<K,V>`: @ref src/c4/yml/std/map.hpp
+ *
+ */
+namespace sample { // because we want the doxygen document above to show up in the proper place
+
+
+//-----------------------------------------------------------------------------
 // user scalar types: implemented in ryml through to_chars() + from_chars()
 
-// To harness [C++'s ADL rules](http://en.cppreference.com/w/cpp/language/adl),
-// it is important to overload these functions in the namespace of the type
-// you're serializing (or in the c4::yml namespace).
-//
-// Please take note of the following pitfall when using serialization
-// functions: you have to include the header with the serialization
-// before any other headers that use functions from it. see the
-// include order at the top of this file.
-//
-// This constraint also applies to the conversion functions for your
-// types; just like with the STL's headers, they should be included
-// prior to ryml's headers.
+/** @addtogroup doc_sample_helpers
+ * @{ */
 
-template<class T> struct vec2 { T x, y; };
-template<class T> struct vec3 { T x, y, z; };
-template<class T> struct vec4 { T x, y, z, w; };
+/** @defgroup doc_sample_scalar_types Serialize/deserialize scalar types
+ * @{ */
 
-template<class T> struct parse_only_vec2 { T x, y; };
-template<class T> struct parse_only_vec3 { T x, y, z; };
-template<class T> struct parse_only_vec4 { T x, y, z, w; };
+template<class T> struct vec2 { T x, y; };  ///< example scalar type, serialized and deserialized
+template<class T> struct vec3 { T x, y, z; };  ///< example scalar type, serialized and deserialized
+template<class T> struct vec4 { T x, y, z, w; };  ///< example scalar type, serialized and deserialized
 
-template<class T> struct emit_only_vec2 { T x, y; };
-template<class T> struct emit_only_vec3 { T x, y, z; };
-template<class T> struct emit_only_vec4 { T x, y, z, w; };
+template<class T> struct parse_only_vec2 { T x, y; }; ///< example scalar type, deserialized only
+template<class T> struct parse_only_vec3 { T x, y, z; }; ///< example scalar type, deserialized only
+template<class T> struct parse_only_vec4 { T x, y, z, w; }; ///< example scalar type, deserialized only
 
-// to_chars(): only needed for emitting
-//
-// format v to the given string view + return the number of
-// characters written into it. The view size (buf.len) must
-// be strictly respected. Return the number of characters
-// that need to be written. So if the return value
-// is larger than buf.len, ryml will resize the buffer and
-// call this again with a larger buffer of the correct size.
+template<class T> struct emit_only_vec2 { T x, y; }; ///< example scalar type, serialized only
+template<class T> struct emit_only_vec3 { T x, y, z; }; ///< example scalar type, serialized only
+template<class T> struct emit_only_vec4 { T x, y, z, w; }; ///< example scalar type, serialized only
 
+/** @defgroup doc_sample_to_chars_scalar Define to_chars to write scalar types
+ *
+ * @brief To serialize user scalar types, implement the appropriate
+ * function to_chars (see also @ref doc_to_chars):
+ *
+ * ```cpp
+ * // any of these can be used:
+ * size_t to_chars(substr buf, T const& v);
+ * size_t to_chars(substr buf, T v); // this also works, and is good when the type is small
+ * ```
+ *
+ * See the sample @ref sample_user_scalar_types() for an example usage.
+ *
+ * Your implementation of to_chars must format v to the given string
+ * view + return the number of characters written into it. The view
+ * size (buf.len) must be strictly respected. Return the number of
+ * characters that need to be written for the value to be completely
+ * serialized in the string. So if the return value is larger than
+ * buf.len, ryml will know that the buffer resize the buffer and call
+ * this again with a larger buffer of the correct size.
+ *
+ * In your implementation, you may be interested in using the
+ * formatting facilities in @ref doc_format_utils and @ref doc_charconv;
+ * refer to their documentation for further details. But this is not
+ * mandatory, and anything can be used, provided that the implemented
+ * `to_chars()` fulfills its contract, described above.
+ *
+ * @warning Because of [C++'s ADL
+ * rules](http://en.cppreference.com/w/cpp/language/adl), **it is
+ * required to overload these functions in the namespace of the type**
+ * you're serializing (or in the c4 namespace, or in the c4::yml
+ * namespace). [Here's an example of an issue where failing to do this
+ * was causing problems in some
+ * platforms](https://github.com/biojppm/rapidyaml/issues/424)
+ *
+ * @note Please take note of the following pitfall when using
+ * serialization functions: you may have to include the header with
+ * your `to_chars()` implementation before any other headers that use
+ * functions from it. See the include order at the top of this source
+ * file. This constraint also applies to the conversion functions for
+ * your types; just like with the STL's headers, they should be
+ * included prior to ryml's headers. Lately, some effort was directed
+ * to provide forward declarations to alleviate this problem, but it
+ * may still occur.
+ *
+ * @see string.hpp
+ * @see string_view.hpp
+ * @{
+ */
 template<class T> size_t to_chars(ryml::substr buf, vec2<T> v) { return ryml::format(buf, "({},{})", v.x, v.y); }
 template<class T> size_t to_chars(ryml::substr buf, vec3<T> v) { return ryml::format(buf, "({},{},{})", v.x, v.y, v.z); }
 template<class T> size_t to_chars(ryml::substr buf, vec4<T> v) { return ryml::format(buf, "({},{},{},{})", v.x, v.y, v.z, v.w); }
@@ -3118,10 +3456,47 @@ template<class T> size_t to_chars(ryml::substr buf, vec4<T> v) { return ryml::fo
 template<class T> size_t to_chars(ryml::substr buf, emit_only_vec2<T> v) { return ryml::format(buf, "({},{})", v.x, v.y); }
 template<class T> size_t to_chars(ryml::substr buf, emit_only_vec3<T> v) { return ryml::format(buf, "({},{},{})", v.x, v.y, v.z); }
 template<class T> size_t to_chars(ryml::substr buf, emit_only_vec4<T> v) { return ryml::format(buf, "({},{},{},{})", v.x, v.y, v.z, v.w); }
+/** @} */
 
 
-// from_chars(): only needed for parsing
-
+/** @defgroup doc_sample_from_chars_scalar Define from_chars to read scalar types
+ *
+ * @brief To deserialize user scalar types, implement the
+ * function `bool from_chars(csubstr buf, T *val)`; see @ref
+ * doc_from_chars.
+ *
+ * The implementation of from_chars must never read beyond the limit
+ * of the given buffer, and must return true/false to indicate
+ * success/failure in the deserialization. On failure, it is up to you
+ * whether the value is left unchanged; ryml itself does not care
+ * about the value when the deserialization failed.
+ *
+ * In your implementation, you may be interested in using the
+ * reading facilities in @ref doc_format_utils and @ref doc_charconv;
+ * refer to their documentation for further details. But this is not
+ * mandatory, and anything can be used, provided that the implemented
+ * from_chars fulfills its contract, described above.
+ *
+ * @warning Because of [C++'s ADL
+ * rules](http://en.cppreference.com/w/cpp/language/adl), **it is
+ * required to overload these functions in the namespace of the type**
+ * you're serializing (or in the c4 namespace, or in the c4::yml
+ * namespace). [Here's an example of an issue where failing to do this
+ * was causing problems in some
+ * platforms](https://github.com/biojppm/rapidyaml/issues/424)
+ *
+ * @note Please take note of the following pitfall when using
+ * serialization functions: you may have to include the header with
+ * your `from_chars()` implementation before any other headers that use
+ * functions from it. See the include order at the top of this source
+ * file. This constraint also applies to the conversion functions for
+ * your types; just like with the STL's headers, they should be
+ * included prior to ryml's headers. Lately, some effort was directed
+ * to provide forward declarations to alleviate this problem, but it
+ * may still occur.
+ *
+ * @{
+ */
 template<class T> bool from_chars(ryml::csubstr buf, vec2<T> *v) { size_t ret = ryml::unformat(buf, "({},{})", v->x, v->y); return ret != ryml::yml::npos; }
 template<class T> bool from_chars(ryml::csubstr buf, vec3<T> *v) { size_t ret = ryml::unformat(buf, "({},{},{})", v->x, v->y, v->z); return ret != ryml::yml::npos; }
 template<class T> bool from_chars(ryml::csubstr buf, vec4<T> *v) { size_t ret = ryml::unformat(buf, "({},{},{},{})", v->x, v->y, v->z, v->w); return ret != ryml::yml::npos; }
@@ -3129,10 +3504,15 @@ template<class T> bool from_chars(ryml::csubstr buf, vec4<T> *v) { size_t ret = 
 template<class T> bool from_chars(ryml::csubstr buf, parse_only_vec2<T> *v) { size_t ret = ryml::unformat(buf, "({},{})", v->x, v->y); return ret != ryml::yml::npos; }
 template<class T> bool from_chars(ryml::csubstr buf, parse_only_vec3<T> *v) { size_t ret = ryml::unformat(buf, "({},{},{})", v->x, v->y, v->z); return ret != ryml::yml::npos; }
 template<class T> bool from_chars(ryml::csubstr buf, parse_only_vec4<T> *v) { size_t ret = ryml::unformat(buf, "({},{},{},{})", v->x, v->y, v->z, v->w); return ret != ryml::yml::npos; }
+/** @} */ // doc_sample_from_chars_scalar
+
+/** @} */ // doc_sample_scalar_types
+/** @} */ // doc_sample_helpers
 
 
 /** to add scalar types (ie leaf types converting to/from string),
-    define the functions above for those types. */
+ * define the functions above for those types. See @ref
+ * doc_sample_scalar_types. */
 void sample_user_scalar_types()
 {
     ryml::Tree t;
@@ -3197,20 +3577,70 @@ v4: '(40,41,42,43)'
 
 
 //-----------------------------------------------------------------------------
-
 // user container types: implemented in ryml through write() + read()
-//
-// Please take note of the following pitfall when using serialization
-// functions: you have to include the header with the serialization
-// before any other headers that use functions from it. see the
-// include order at the top of this file.
-//
-// This constraint also applies to the conversion functions for your
-// types; just like with the STL's headers, they should be included
-// prior to ryml's headers.
 
-// user container type: seq-like
-template<class T> struct my_seq_type { std::vector<T> seq_member; };
+/** @addtogroup doc_sample_helpers
+ * @{ */
+
+/** @defgroup doc_sample_container_types Serialize/deserialize container types
+ *
+ * To serialize/deserialize container types to a tree, implement the
+ * appropriate functions:
+ *
+ * ```cpp
+ * void write(ryml::NodeRef *n, T const& seq);
+ * bool read(ryml::ConstNodeRef const& n, T *seq);
+ * ```
+ *
+ * @warning Because of [C++'s ADL
+ * rules](http://en.cppreference.com/w/cpp/language/adl), **it is
+ * required to overload these functions in the namespace of the type**
+ * you're serializing (or in the c4 namespace, or in the c4::yml
+ * namespace). [Here's an example of an issue where failing to do this
+ * was causing problems in some
+ * platforms](https://github.com/biojppm/rapidyaml/issues/424)
+ *
+ * @note Please take note of the following pitfall when using
+ * serialization functions: you may have to include the header with
+ * your `write()` or `read()` implementation before any other headers
+ * that use functions from it. See the include order at the top of
+ * this source file. This constraint also applies to the conversion
+ * functions for your types; just like with the STL's headers, they
+ * should be included prior to ryml's headers. Lately, some effort was
+ * directed to provide forward declarations to alleviate this problem,
+ * but it may still occur.
+ *
+ * @see sample::sample_container_types
+ * @see sample::sample_std_types
+ *
+ * @{ */
+
+
+/** example user container type: seq-like */
+template<class T>
+struct my_seq_type
+{
+    std::vector<T> seq_member;
+};
+/** example user container type: map-like */
+template<class K, class V>
+struct my_map_type
+{
+    std::map<K, V> map_member;
+};
+/** example user container type with nested container members.
+ * notice all the members have user-defined serialization methods. */
+struct my_type
+{
+    // these are leaf nodes:
+    vec2<int> v2;
+    vec3<int> v3;
+    vec4<int> v4;
+    // these are container nodes:
+    my_seq_type<int> seq;
+    my_map_type<int, int> map;
+};
+
 template<class T>
 void write(ryml::NodeRef *n, my_seq_type<T> const& seq)
 {
@@ -3218,6 +3648,25 @@ void write(ryml::NodeRef *n, my_seq_type<T> const& seq)
     for(auto const& v : seq.seq_member)
         n->append_child() << v;
 }
+template<class K, class V>
+void write(ryml::NodeRef *n, my_map_type<K, V> const& map)
+{
+    *n |= ryml::MAP;
+    for(auto const& v : map.map_member)
+        n->append_child() << ryml::key(v.first) << v.second;
+}
+void write(ryml::NodeRef *n, my_type const& val)
+{
+    *n |= ryml::MAP;
+    // these are leaf nodes:
+    n->append_child() << ryml::key("v2") << val.v2;
+    n->append_child() << ryml::key("v3") << val.v3;
+    n->append_child() << ryml::key("v4") << val.v4;
+    // these are container nodes:
+    n->append_child() << ryml::key("seq") << val.seq;
+    n->append_child() << ryml::key("map") << val.map;
+}
+
 template<class T>
 bool read(ryml::ConstNodeRef const& n, my_seq_type<T> *seq)
 {
@@ -3226,17 +3675,6 @@ bool read(ryml::ConstNodeRef const& n, my_seq_type<T> *seq)
     for(auto const ch : n.children())
         ch >> seq->seq_member[pos++];
     return true;
-}
-
-
-// user container type: map-like
-template<class K, class V> struct my_map_type { std::map<K, V> map_member; };
-template<class K, class V>
-void write(ryml::NodeRef *n, my_map_type<K, V> const& map)
-{
-    *n |= ryml::MAP;
-    for(auto const& v : map.map_member)
-        n->append_child() << ryml::key(v.first) << v.second;
 }
 template<class K, class V>
 bool read(ryml::ConstNodeRef const& n, my_map_type<K, V> *map)
@@ -3250,38 +3688,27 @@ bool read(ryml::ConstNodeRef const& n, my_map_type<K, V> *map)
     }
     return true;
 }
-
-
-// user container type: notice all the members are complex types
-// defined above
-struct my_type
-{
-    vec2<int> v2;
-    vec3<int> v3;
-    vec4<int> v4;
-    my_seq_type<int> seq;
-    my_map_type<int, int> map;
-};
-void write(ryml::NodeRef *n, my_type const& val)
-{
-    *n |= ryml::MAP;
-    n->append_child() << ryml::key("v2") << val.v2;
-    n->append_child() << ryml::key("v3") << val.v3;
-    n->append_child() << ryml::key("v4") << val.v4;
-    n->append_child() << ryml::key("seq") << val.seq;
-    n->append_child() << ryml::key("map") << val.map;
-}
 bool read(ryml::ConstNodeRef const& n, my_type *val)
 {
+    // these are leaf nodes:
     n["v2"] >> val->v2;
     n["v3"] >> val->v3;
     n["v4"] >> val->v4;
+    // these are container nodes:
     n["seq"] >> val->seq;
     n["map"] >> val->map;
     return true;
 }
 
+/** @} */ // doc_sample_container_types
 
+/** @} */ // sample_helpers
+
+
+/** shows how to serialize/deserialize container types.
+ * @see doc_sample_container_types
+ * @see sample_std_types
+ * */
 void sample_user_container_types()
 {
     my_type mt_in{
@@ -3338,17 +3765,11 @@ map:
 
 
 //-----------------------------------------------------------------------------
-//
-// Please take note of the following pitfall when using serialization
-// functions: you have to include the header with the serialization
-// before any other headers that use functions from it. see the
-// include order at the top of this file.
-//
-// This constraint also applies to the conversion functions for your
-// types; just like with the STL's headers, they should be included
-// prior to ryml's headers.
 
-/** demonstrates usage with the std implementations provided by ryml in the ryml_std.hpp header */
+/** demonstrates usage with the std implementations provided by ryml
+    in the ryml_std.hpp header
+  @see @ref doc_sample_container_types
+  @see also the STL section in @ref doc_serialization */
 void sample_std_types()
 {
     std::string yml_std_string = R"(- v2: '(20,21)'
@@ -4172,53 +4593,6 @@ d: 3
 // the default error handler throw a std::runtime_error instead.
 
 
-struct ErrorHandlerExample
-{
-    // this will be called on error
-    void on_error(const char* msg, size_t len, ryml::Location loc)
-    {
-        throw std::runtime_error(ryml::formatrs<std::string>("{}:{}:{} ({}B): ERROR: {}",
-            loc.name, loc.line, loc.col, loc.offset, ryml::csubstr(msg, len)));
-    }
-
-    // bridge
-    ryml::Callbacks callbacks()
-    {
-        return ryml::Callbacks(this, nullptr, nullptr, ErrorHandlerExample::s_error);
-    }
-    static void s_error(const char* msg, size_t len, ryml::Location loc, void *this_)
-    {
-        return ((ErrorHandlerExample*)this_)->on_error(msg, len, loc);
-    }
-
-    // checking
-    template<class Fn>
-    void check_error_occurs(Fn &&fn) const
-    {
-        bool expected_error_occurred = false;
-        try { fn(); }
-        catch(std::runtime_error const&) { expected_error_occurred = true; }
-        CHECK(expected_error_occurred);
-    }
-    void check_effect(bool committed) const
-    {
-        ryml::Callbacks const& current = ryml::get_callbacks();
-        if(committed)
-        {
-            CHECK(current.m_error == &s_error);
-        }
-        else
-        {
-            CHECK(current.m_error != &s_error);
-        }
-        CHECK(current.m_allocate == defaults.m_allocate);
-        CHECK(current.m_free == defaults.m_free);
-    }
-    // save the default callbacks for checking
-    ErrorHandlerExample() : defaults(ryml::get_callbacks()) {}
-    ryml::Callbacks defaults;
-};
-
 /** demonstrates how to set a custom error handler for ryml */
 void sample_error_handler()
 {
@@ -4230,9 +4604,9 @@ void sample_error_handler()
     // crash.
     ryml::set_callbacks(errh.callbacks());
     errh.check_effect(/*committed*/true);
-    errh.check_error_occurs([&]{
+    CHECK(errh.check_error_occurs([&]{
         ryml::Tree tree = ryml::parse_in_arena("errorhandler.yml", "[a: b\n}");
-    });
+    }));
     ryml::set_callbacks(errh.defaults); // restore defaults.
     errh.check_effect(/*committed*/false);
 }
@@ -4257,6 +4631,8 @@ void sample_error_handler()
 // See also sample_static_trees() for an example on how to use
 // trees with static lifetime.
 
+/** @addtogroup doc_sample_helpers
+ * @{ */
 struct GlobalAllocatorExample
 {
     std::vector<char> memory_pool = std::vector<char>(10u * 1024u); // 10KB
@@ -4317,6 +4693,7 @@ struct GlobalAllocatorExample
         dealloc_size = 0;
     }
 };
+/** @} */
 
 
 /** demonstrates how to set the global allocator for ryml */
@@ -4376,6 +4753,9 @@ void sample_global_allocator()
 
 
 //-----------------------------------------------------------------------------
+
+/** @addtogroup doc_sample_helpers
+ * @{ */
 
 /** an example for a per-tree memory allocator */
 struct PerTreeMemoryExample
@@ -4437,6 +4817,7 @@ struct PerTreeMemoryExample
         dealloc_size = 0;
     }
 };
+/** @} */
 
 void sample_per_tree_allocator()
 {
@@ -4672,6 +5053,10 @@ seq with key:
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
+
+/** @addtogroup doc_sample_helpers
+ * @{ */
+
 namespace /*anon*/ {
 static int num_checks = 0;
 static int num_failed_checks = 0;
@@ -4702,30 +5087,88 @@ int report_checks()
     return num_failed_checks;
 }
 
+// methods for the example error handler
+
+// checking
+template<class Fn>
+C4_NODISCARD bool ErrorHandlerExample::check_error_occurs(Fn &&fn) const
+{
+    bool expected_error_occurred = false;
+    try { fn(); }
+    catch(std::exception const&) { expected_error_occurred = true; }
+    return expected_error_occurred;
+}
+template<class Fn>
+C4_NODISCARD bool ErrorHandlerExample::check_assertion_occurs(Fn &&fn) const
+{
+#if RYML_USE_ASSERT
+    return check_error_occurs(fn);
+#else
+    (void)fn; // do nothing otherwise, as there would be undefined behavior
+    return true;
+#endif
+}
+
+/** this C-style callback is the one stored and used by ryml. It is a
+ * trampoline function calling on_error() */
+C4_NORETURN void ErrorHandlerExample::s_error(const char* msg, size_t len, ryml::Location loc, void *this_)
+{
+    ((ErrorHandlerExample*)this_)->on_error(msg, len, loc);
+}
+/** this is the where the callback implementation goes. Remember that it must not return. */
+C4_NORETURN void ErrorHandlerExample::on_error(const char* msg, size_t len, ryml::Location loc)
+{
+    std::string full_msg = ryml::formatrs<std::string>(
+        "{}:{}:{} ({}B): ERROR: {}",
+        loc.name, loc.line, loc.col, loc.offset, ryml::csubstr(msg, len));
+    throw std::runtime_error(full_msg);
+}
+
+/** a helper to create the Callbacks object with the custom error handler */
+ryml::Callbacks ErrorHandlerExample::callbacks()
+{
+    return ryml::Callbacks(this, nullptr, nullptr, ErrorHandlerExample::s_error);
+}
+
+void ErrorHandlerExample::check_effect(bool committed) const
+{
+    ryml::Callbacks const& current = ryml::get_callbacks();
+    if(committed)
+    {
+        CHECK((ryml::pfn_error)current.m_error == &s_error);
+    }
+    else
+    {
+        CHECK((ryml::pfn_error)current.m_error != &s_error);
+    }
+    CHECK(current.m_allocate == defaults.m_allocate);
+    CHECK(current.m_free == defaults.m_free);
+}
+
 
 // helper functions for sample_parse_file()
 
-C4_SUPPRESS_WARNING_MSVC_WITH_PUSH(4996) // fopen: this function or variable may be unsafe
-/** load a file from disk and return a newly created CharContainer */
+C4_SUPPRESS_WARNING_MSVC_WITH_PUSH(4996) // fopen: this function may be unsafe
+/** load a file from disk into an existing CharContainer */
 template<class CharContainer>
 size_t file_get_contents(const char *filename, CharContainer *v)
 {
-    ::FILE *fp = ::fopen(filename, "rb");
-    C4_CHECK_MSG(fp != nullptr, "could not open file");
-    ::fseek(fp, 0, SEEK_END);
-    long sz = ::ftell(fp);
+    std::FILE *fp = std::fopen(filename, "rb");
+    RYML_CHECK_MSG(fp != nullptr, "could not open file");
+    std::fseek(fp, 0, SEEK_END);
+    long sz = std::ftell(fp);
     v->resize(static_cast<typename CharContainer::size_type>(sz));
     if(sz)
     {
-        ::rewind(fp);
-        size_t ret = ::fread(&(*v)[0], 1, v->size(), fp);
-        C4_CHECK(ret == (size_t)sz);
+        std::rewind(fp);
+        size_t ret = std::fread(&(*v)[0], 1, v->size(), fp);
+        RYML_CHECK(ret == (size_t)sz);
     }
-    ::fclose(fp);
+    std::fclose(fp);
     return v->size();
 }
 
-/** load a file from disk into an existing CharContainer */
+/** load a file from disk and return a newly created CharContainer */
 template<class CharContainer>
 CharContainer file_get_contents(const char *filename)
 {
@@ -4744,12 +5187,16 @@ void file_put_contents(const char *filename, CharContainer const& v, const char*
 /** save a buffer into a file */
 void file_put_contents(const char *filename, const char *buf, size_t sz, const char* access)
 {
-    ::FILE *fp = ::fopen(filename, access);
-    C4_CHECK_MSG(fp != nullptr, "could not open file");
-    ::fwrite(buf, 1, sz, fp);
-    ::fclose(fp);
+    std::FILE *fp = std::fopen(filename, access);
+    RYML_CHECK_MSG(fp != nullptr, "could not open file");
+    std::fwrite(buf, 1, sz, fp);
+    std::fclose(fp);
 }
 C4_SUPPRESS_WARNING_MSVC_POP
+
+/** @} */ // doc_sample_helpers
+
+/** @} */ // doc_quickstart
 
 } // namespace sample
 

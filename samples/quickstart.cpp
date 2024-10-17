@@ -77,7 +77,7 @@ void sample_location_tracking();    ///< track node locations in the parsed sour
 int  report_checks();
 } /* namespace sample */
 
-int main()
+int main(void)
 {
     sample::sample_lightning_overview();
     sample::sample_quick_overview();

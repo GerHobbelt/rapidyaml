@@ -495,26 +495,146 @@ reference_list:
 )";
 
     Tree tree;
-    const size_t root_id = tree.root_id();
+    const id_type root_id = tree.root_id();
     tree.to_map(root_id);
 
-    const size_t anchor_list_id = tree.append_child(root_id);
+    const id_type anchor_list_id = tree.append_child(root_id);
     tree.to_seq(anchor_list_id, "anchor_objects");
 
-    const size_t anchor_map0 = tree.append_child(anchor_list_id);
+    const id_type anchor_map0 = tree.append_child(anchor_list_id);
     tree.to_map(anchor_map0);
     tree.set_val_anchor(anchor_map0, "id001");
 
-    const size_t anchor_elem0 = tree.append_child(anchor_map0);
+    const id_type anchor_elem0 = tree.append_child(anchor_map0);
     tree.to_keyval(anchor_elem0, "name", "a_name");
 
-    const size_t ref_list_id = tree.append_child(root_id);
+    const id_type ref_list_id = tree.append_child(root_id);
     tree.to_seq(ref_list_id, "reference_list");
 
-    const size_t elem0_id = tree.append_child(ref_list_id);
+    const id_type elem0_id = tree.append_child(ref_list_id);
     tree.set_val_ref(elem0_id, "id001");
 
     EXPECT_EQ(emitrs_yaml<std::string>(tree), expected_yaml);
+}
+
+TEST(deserialize, issue434_0)
+{
+    Tree tree = parse_in_arena("{empty: }");
+    ConstNodeRef cnode = tree["empty"];
+    NodeRef node = tree["empty"];
+    {
+        int value = 0;
+        EXPECT_FALSE(read(cnode, &value));
+    }
+    {
+        int value = 0;
+        EXPECT_FALSE(read(node, &value));
+    }
+    ExpectError::do_check(&tree, [&]{
+        int value = 0;
+        cnode >> value;
+    });
+    ExpectError::do_check(&tree, [&]{
+        int value = 0;
+        node >> value;
+    });
+    {
+        double value = 0;
+        EXPECT_FALSE(read(cnode, &value));
+    }
+    {
+        double value = 0;
+        EXPECT_FALSE(read(node, &value));
+    }
+    ExpectError::do_check(&tree, [&]{
+        double value = 0;
+        cnode >> value;
+    });
+    ExpectError::do_check(&tree, [&]{
+        double value = 0;
+        node >> value;
+    });
+}
+
+void test_deserialize_trailing_434(csubstr yaml, csubstr val, csubstr first, double dval)
+{
+    Tree tree = parse_in_arena(yaml);
+    ASSERT_EQ(tree["val"].val(), val);
+    EXPECT_EQ(tree["val"].val().first_int_span(), first);
+    EXPECT_EQ(tree["val"].val().first_real_span(), first);
+    ConstNodeRef cnode = tree["val"];
+    NodeRef node = tree["val"];
+    {
+        int value;
+        EXPECT_FALSE(read(cnode, &value));
+    }
+    {
+        int value;
+        EXPECT_FALSE(read(node, &value));
+    }
+    ExpectError::do_check(&tree, [&]{
+        int value = 1;
+        cnode >> value;
+    });
+    ExpectError::do_check(&tree, [&]{
+        int value = 1;
+        node >> value;
+    });
+    float fval = (float)dval;
+    {
+        float value;
+        EXPECT_TRUE(read(cnode, &value));
+        EXPECT_EQ(memcmp(&value, &fval, sizeof(fval)), 0);
+    }
+    {
+        float value;
+        EXPECT_TRUE(read(node, &value));
+        EXPECT_EQ(memcmp(&value, &fval, sizeof(fval)), 0);
+    }
+    {
+        double value;
+        EXPECT_TRUE(read(cnode, &value));
+        EXPECT_EQ(memcmp(&value, &dval, sizeof(dval)), 0);
+    }
+    {
+        double value;
+        EXPECT_TRUE(read(node, &value));
+        EXPECT_EQ(memcmp(&value, &dval, sizeof(dval)), 0);
+    }
+    {
+        float value = 1;
+        cnode >> value;
+        EXPECT_EQ(memcmp(&value, &fval, sizeof(fval)), 0);
+    }
+    {
+        float value = 1;
+        node >> value;
+        EXPECT_EQ(memcmp(&value, &fval, sizeof(fval)), 0);
+    }
+    {
+        double value = 1;
+        cnode >> value;
+        EXPECT_EQ(memcmp(&value, &dval, sizeof(fval)), 0);
+    }
+    {
+        double value = 1;
+        node >> value;
+        EXPECT_EQ(memcmp(&value, &dval, sizeof(fval)), 0);
+    }
+}
+TEST(deserialize, issue434_1)
+{
+    test_deserialize_trailing_434("{val: 0.r3}", "0.r3", "", 0.0);
+}
+
+TEST(deserialize, issue434_2)
+{
+    test_deserialize_trailing_434("{val: 34gf3}", "34gf3", "", 34.0);
+}
+
+TEST(deserialize, issue434_3)
+{
+    test_deserialize_trailing_434("{val: 34 gf3}", "34 gf3", "34", 34.0);
 }
 
 

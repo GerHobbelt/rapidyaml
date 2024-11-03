@@ -5,7 +5,7 @@ Most of the changes are from the giant Parser refactor described below. Before g
 
 - [#PR431](https://github.com/biojppm/rapidyaml/pull/431) - Emitter: prevent stack overflows when emitting malicious trees by providing a max tree depth for the emit visitor. This was done by adding an `EmitOptions` structure as an argument both to the emitter and to the emit functions, which is then forwarded to the emitter. This `EmitOptions` structure has a max tree depth setting with a default value of 64.
 - [#PR431](https://github.com/biojppm/rapidyaml/pull/431) - Fix `_RYML_CB_ALLOC()` using `(T)` in parenthesis, making the macro unusable.
-
+- [#434] - Ensure empty vals are not deserialized ([#PR436](https://github.com/biojppm/rapidyaml/pull/436)).
 
 ### New features
 
@@ -18,6 +18,10 @@ Most of the changes are from the giant Parser refactor described below. Before g
   ConstNodeRef::depth_desc() const;
   NodeRef::depth_asc() const;
   NodeRef::depth_desc() const;
+  ```
+- [#PR432](https://github.com/biojppm/rapidyaml/pull/432) - Added a function to estimate the required tree capacity, based on yaml markup:
+  ```cpp
+  size_t estimate_tree_capacity(csubstr); // estimate number of nodes resulting from yaml
   ```
 
 

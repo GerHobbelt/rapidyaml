@@ -1,5 +1,20 @@
+## New features
+
+- [PR#459](https://github.com/biojppm/rapidyaml/pull/459): Add version functions and macros:
+  ```cpp
+  #define RYML_VERSION "0.7.1"
+  #define RYML_VERSION_MAJOR 0
+  #define RYML_VERSION_MINOR 7
+  #define RYML_VERSION_PATCH 1
+  csubstr version();
+  int version_major();
+  int version_minor();
+  int version_patch();
+  ```
+
 ## Fixes
 
+- Fix [#455](https://github.com/biojppm/rapidyaml/issues/455): parsing of trailing val-less nested maps when deindented to maps ([PR#460](https://github.com/biojppm/rapidyaml/pull/460))
 - Fix filtering of double-quoted keys in block maps ([PR#452](https://github.com/biojppm/rapidyaml/pull/452))
 - Fix [#440](https://github.com/biojppm/rapidyaml/issues/440): some tests failing with gcc -O2 (hypothetically due to undefined behavior)
   - This was accomplished by refactoring some internal parser functions; see the comments in [#440](https://github.com/biojppm/rapidyaml/issues/440) for further details.
@@ -14,6 +29,7 @@
 
 ## Thanks
 
+- @marcalff
 - @toge
 - @musicinmybrain
 - @buty4649

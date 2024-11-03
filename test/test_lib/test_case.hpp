@@ -34,6 +34,7 @@
 #   pragma warning(push)
 #   pragma warning(disable: 4296/*expression is always 'boolean_value'*/)
 #   pragma warning(disable: 4389/*'==': signed/unsigned mismatch*/)
+#   pragma warning(disable: 4702/*unreachable code*/)
 #   if C4_MSVC_VERSION != C4_MSVC_VERSION_2017
 #       pragma warning(disable: 4800/*'int': forcing value to bool 'true' or 'false' (performance warning)*/)
 #   endif
@@ -203,9 +204,9 @@ struct ExpectError
     ExpectError(Tree *tree, Location loc={});
     ~ExpectError();
 
-    static void do_check(            std::function<void()> fn, Location expected={}) { do_check((const Tree*)nullptr, fn, expected); }
-    static void do_check(Tree *tree, std::function<void()> fn, Location expected={});
-    static void do_check(Tree const *tree, std::function<void()> fn, Location expected={});
+    static void check_error(            std::function<void()> fn, Location expected={}) { check_error((const Tree*)nullptr, fn, expected); }
+    static void check_error(Tree *tree, std::function<void()> fn, Location expected={});
+    static void check_error(Tree const *tree, std::function<void()> fn, Location expected={});
     static void check_assertion(            std::function<void()> fn, Location expected={}) { check_assertion(nullptr, fn, expected); }
     static void check_assertion(Tree *tree, std::function<void()> fn, Location expected={});
     static void check_success(            std::function<void()> fn) { check_success(nullptr, fn); };

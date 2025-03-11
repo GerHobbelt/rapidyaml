@@ -1,4 +1,4 @@
-# DO NOT EDIT - GENERATED FROM .github/workflows-ys/clang.yml
+# DO NOT EDIT - GENERATED FROM .github/workflows/clang.ys
 
 name: clang
 defaults:
@@ -19,9 +19,12 @@ env:
   NUM_JOBS_BUILD: null
 jobs:
   clang_canary:
-    name: clang_canary/${{matrix.cxx}}/c++${{matrix.std}}/${{matrix.bt}}
+    if: |
+      (!contains(github.event.head_commit.message, 'skip all')) ||
+      (!contains(github.event.head_commit.message, 'skip clang')) ||
+      contains(github.event.head_commit.message, 'only clang')
     continue-on-error: true
-    if: always()
+    name: canary/${{matrix.cxx}}/c++${{matrix.std}}/${{matrix.bt}}
     runs-on: ubuntu-latest
     container: ghcr.io/biojppm/c4core/ubuntu22.04:latest
     strategy:
@@ -54,10 +57,11 @@ jobs:
       LINT: ${{matrix.lint}}
       OS: ${{matrix.os}}
     steps:
-    - name: checkout
+    - name: checkout (action + docker)
       uses: actions/checkout@v4
       with:
         submodules: recursive
+        fetch-depth: 0
     - run: git config --system --add safe.directory '*'
     - run: c4core-install ${{matrix.cxx}}
     - name: show info
@@ -95,9 +99,12 @@ jobs:
     - name: shared32-pack
       run: source .github/setenv.sh && c4_package shared32
   clang_tabtokens:
-    name: clang_tabtokens/${{matrix.cxx}}/c++${{matrix.std}}/${{matrix.bt}}
+    if: |
+      (!contains(github.event.head_commit.message, 'skip all')) ||
+      (!contains(github.event.head_commit.message, 'skip clang')) ||
+      contains(github.event.head_commit.message, 'only clang')
     continue-on-error: true
-    if: always()
+    name: tabtokens/${{matrix.cxx}}/c++${{matrix.std}}/${{matrix.bt}}
     runs-on: ubuntu-latest
     container: ghcr.io/biojppm/c4core/ubuntu22.04:latest
     strategy:
@@ -131,12 +138,13 @@ jobs:
       OS: ${{matrix.os}}
       CMAKE_FLAGS: -DRYML_WITH_TAB_TOKENS=ON
     steps:
-    - name: checkout
+    - name: checkout (action + docker)
       uses: actions/checkout@v4
       with:
         submodules: recursive
+        fetch-depth: 0
     - run: git config --system --add safe.directory '*'
-    - run: c4core-install $CXX_
+    - run: c4core-install ${{matrix.cxx}}
     - name: show info
       run: source .github/setenv.sh && c4_show_info
     - name: shared64-configure---------------------------------------------------
@@ -172,9 +180,12 @@ jobs:
     - name: shared32-pack
       run: source .github/setenv.sh && c4_package shared32
   clang_noexceptions:
-    name: clang_noexceptions/${{matrix.cxx}}/c++${{matrix.std}}/${{matrix.bt}}
+    if: |
+      (!contains(github.event.head_commit.message, 'skip all')) ||
+      (!contains(github.event.head_commit.message, 'skip clang')) ||
+      contains(github.event.head_commit.message, 'only clang')
     continue-on-error: true
-    if: always()
+    name: noexceptions/${{matrix.cxx}}/c++${{matrix.std}}/${{matrix.bt}}
     runs-on: ubuntu-latest
     container: ghcr.io/biojppm/c4core/ubuntu22.04:latest
     strategy:
@@ -208,10 +219,11 @@ jobs:
       LINT: ${{matrix.lint}}
       OS: ${{matrix.os}}
     steps:
-    - name: checkout
+    - name: checkout (action + docker)
       uses: actions/checkout@v4
       with:
         submodules: recursive
+        fetch-depth: 0
     - run: git config --system --add safe.directory '*'
     - run: c4core-install ${{matrix.cxx}}
     - name: show info
@@ -249,11 +261,14 @@ jobs:
     - name: shared32-pack
       run: source .github/setenv.sh && c4_package shared32
   clang_extended:
-    name: clang_extended/${{matrix.cxx}}/c++${{matrix.std}}/${{matrix.bt}}/vg${{matrix.vg}}
+    if: |
+      (!contains(github.event.head_commit.message, 'skip all')) ||
+      (!contains(github.event.head_commit.message, 'skip clang')) ||
+      contains(github.event.head_commit.message, 'only clang')
     continue-on-error: true
-    if: always()
+    name: extended/${{matrix.cxx}}/c++${{matrix.std}}/${{matrix.bt}}/vg${{matrix.vg}}
     runs-on: ubuntu-latest
-    container: ghcr.io/biojppm/c4core/${{matrix.img}}:latest
+    container: ghcr.io/biojppm/c4core/ubuntu${{matrix.img}}:latest
     strategy:
       fail-fast: false
       matrix:
@@ -262,152 +277,152 @@ jobs:
           cxx: clang++-17
           bt: Debug
           vg: 'on'
-          img: ubuntu22.04
+          img: '22.04'
         - std: 11
           cxx: clang++-17
           bt: Release
           vg: 'on'
-          img: ubuntu22.04
+          img: '22.04'
         - std: 11
           cxx: clang++-16
           bt: Debug
           vg: 'on'
-          img: ubuntu22.04
+          img: '22.04'
         - std: 11
           cxx: clang++-16
           bt: Release
           vg: 'on'
-          img: ubuntu22.04
+          img: '22.04'
         - std: 11
           cxx: clang++-15
           bt: Debug
           vg: 'on'
-          img: ubuntu22.04
+          img: '22.04'
         - std: 11
           cxx: clang++-15
           bt: Release
           vg: 'on'
-          img: ubuntu22.04
+          img: '22.04'
         - std: 11
           cxx: clang++-14
           bt: Debug
           vg: 'on'
-          img: ubuntu22.04
+          img: '22.04'
         - std: 11
           cxx: clang++-14
           bt: Release
           vg: 'on'
-          img: ubuntu22.04
+          img: '22.04'
         - std: 11
           cxx: clang++-13
           bt: Debug
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-13
           bt: Release
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-12
           bt: Debug
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-12
           bt: Release
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-11
           bt: Debug
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-11
           bt: Release
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-10
           bt: Debug
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-10
           bt: Release
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-9
           bt: Debug
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-9
           bt: Release
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-8
           bt: Debug
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-8
           bt: Release
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-7
           bt: Debug
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-7
           bt: Release
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-6.0
           bt: Debug
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-6.0
           bt: Release
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-5.0
           bt: Debug
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-5.0
           bt: Release
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-4.0
           bt: Debug
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-4.0
           bt: Release
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-3.9
           bt: Debug
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
         - std: 11
           cxx: clang++-3.9
           bt: Release
           vg: 'on'
-          img: ubuntu18.04
+          img: '18.04'
     env:
       STD: ${{matrix.std}}
       CXX_: ${{matrix.cxx}}
@@ -418,19 +433,54 @@ jobs:
       LINT: ${{matrix.lint}}
       OS: ${{matrix.os}}
     steps:
-    - name: checkout
+    - name: checkout (manually)
       run: |
-        set -x
+        set -xeo pipefail
+        env | sort
+        echo GITHUB_SERVER_URL=$GITHUB_SERVER_URL
+        echo GITHUB_REPOSITORY=$GITHUB_REPOSITORY
         echo GITHUB_REF=$GITHUB_REF
+        echo GITHUB_REF_NAME=$GITHUB_REF_NAME
         echo GITHUB_HEAD_REF=$GITHUB_HEAD_REF
-        branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}  # https://stackoverflow.com/questions/58033366
+        repo=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY
+        # check the branch
+        # https://stackoverflow.com/questions/58033366
+        branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
         echo branch=$branch
+        # does the branch exist in the repo?
+        if [ -z "$(git ls-remote $repo | grep $branch)" ] ; then
+            echo "branch $branch does not exist on $repo"
+            # refs/pull/485/merge -> pull/485/head
+            branch=`echo ${GITHUB_REF#refs/} | sed -e 's:merge:head:g'`
+            echo "... falling back to $branch"
+            # does the fallback exist?
+            if [ -z "(git ls-remote $repo | grep $branch)" ] ; then
+                echo "branch $branch does not exist on $repo"
+                exit 1
+            else
+                echo "branch $branch exists on $repo"
+                localbranch=$(echo $branch | sed -e 's@[/:]@_@g')
+                branch=$branch:$localbranch
+                echo "naming locally as $branch"
+            fi
+        fi
+        # finally, create the local repo
         git init -q .
-        git config --system --add safe.directory '*'  # needed for running in the docker image. see https://github.com/actions/checkout/issues/1169
-        git remote add origin $GITHUB_SERVER_URL/$GITHUB_REPOSITORY
+        # needed for running in the docker image.
+        # see https://github.com/actions/checkout/issues/1169
+        git config --system --add safe.directory '*'
+        # finally, do it!
+        git remote add origin $repo
         git fetch origin $branch
         git reset --hard FETCH_HEAD
         git submodule update --init --recursive
+        # show the log
+        git log --graph --date=relative --date-order --color=always \
+                --pretty='%C(yellow)%h %C(cyan)%cd %Cblue%aN%C(auto)%d %Creset%s' \
+            | head -30 \
+            || echo -n
+        # show the last commit
+        git log --name-status HEAD^..HEAD
     - run: c4core-install ${{matrix.cxx}}
     - name: show info
       run: source .github/setenv.sh && c4_show_info
@@ -467,9 +517,12 @@ jobs:
     - name: shared32-pack
       run: source .github/setenv.sh && c4_package shared32
   clangsan:
-    name: clang/${{matrix.bt}}/c++${{matrix.std}}
+    if: |
+      (!contains(github.event.head_commit.message, 'skip all')) ||
+      (!contains(github.event.head_commit.message, 'skip clang')) ||
+      contains(github.event.head_commit.message, 'only clang')
     continue-on-error: true
-    if: always()
+    name: san/${{matrix.bt}}/c++${{matrix.std}}
     runs-on: ubuntu-latest
     container: ghcr.io/biojppm/c4core/ubuntu22.04:latest
     strategy:
@@ -550,10 +603,11 @@ jobs:
       LINT: ${{matrix.lint}}
       OS: ${{matrix.os}}
     steps:
-    - name: checkout
+    - name: checkout (action + docker)
       uses: actions/checkout@v4
       with:
         submodules: recursive
+        fetch-depth: 0
     - run: git config --system --add safe.directory '*'
     - run: c4core-install ${{matrix.cxx}}
     - name: show info

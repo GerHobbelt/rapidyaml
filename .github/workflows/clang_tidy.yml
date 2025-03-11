@@ -1,4 +1,4 @@
-# DO NOT EDIT - GENERATED FROM .github/workflows-ys/clang_tidy.yml
+# DO NOT EDIT - GENERATED FROM .github/workflows/clang_tidy.ys
 
 name: clang_tidy
 defaults:
@@ -19,9 +19,12 @@ env:
   NUM_JOBS_BUILD: null
 jobs:
   clang_tidy:
-    name: clang_tidy/c++${{matrix.std}}/${{matrix.bt}}
+    if: |
+      (!contains(github.event.head_commit.message, 'skip all')) ||
+      (!contains(github.event.head_commit.message, 'skip clang_tidy')) ||
+      contains(github.event.head_commit.message, 'only clang_tidy')
     continue-on-error: true
-    if: always()
+    name: clang_tidy/c++${{matrix.std}}/${{matrix.bt}}
     runs-on: ubuntu-latest
     container: ghcr.io/biojppm/c4core/ubuntu22.04:latest
     strategy:
@@ -78,10 +81,11 @@ jobs:
       LINT: ${{matrix.lint}}
       OS: ${{matrix.os}}
     steps:
-    - name: checkout
+    - name: checkout (action + docker)
       uses: actions/checkout@v4
       with:
         submodules: recursive
+        fetch-depth: 0
     - run: git config --system --add safe.directory '*'
     - run: c4core-install ${{matrix.cxx}}
     - name: show info

@@ -1,4 +1,4 @@
-# DO NOT EDIT - GENERATED FROM .github/workflows-ys/windows.yml
+# DO NOT EDIT - GENERATED FROM .github/workflows/windows.ys
 
 name: windows
 defaults:
@@ -19,12 +19,12 @@ env:
   NUM_JOBS_BUILD: null
 jobs:
   vs:
-    name: ${{matrix.cxx}}/c++${{matrix.std}}/${{matrix.bt}}
     if: |
       (!contains(github.event.head_commit.message, 'skip all')) ||
       (!contains(github.event.head_commit.message, 'skip windows')) ||
       contains(github.event.head_commit.message, 'only windows')
     continue-on-error: true
+    name: ${{matrix.cxx}}/c++${{matrix.std}}/${{matrix.bt}}
     runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
@@ -90,10 +90,11 @@ jobs:
       LINT: ${{matrix.lint}}
       OS: ${{matrix.os}}
     steps:
-    - name: checkout
+    - name: checkout (action)
       uses: actions/checkout@v4
       with:
         submodules: recursive
+        fetch-depth: 0
     - name: install requirements
       run: source .github/reqs.sh && c4_install_test_requirements $OS
     - name: show info

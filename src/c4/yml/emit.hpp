@@ -75,9 +75,9 @@ typedef enum {
 struct EmitOptions
 {
     typedef enum : uint32_t {
-        DEFAULT_FLAGS = 0,
-        JSON_ERR_ON_TAG = 1 << 0,
-        JSON_ERR_ON_ANCHOR = 1 << 1,
+        DEFAULT_FLAGS = 0u,
+        JSON_ERR_ON_TAG = 1u << 0u,
+        JSON_ERR_ON_ANCHOR = 1u << 1u,
         _JSON_ERR_MASK = JSON_ERR_ON_TAG|JSON_ERR_ON_ANCHOR,
     } EmitOptionFlags_e;
 
@@ -472,7 +472,6 @@ inline OStream& operator<< (OStream& s, as_yaml const& y)
  * @param id the node where to start emitting.
  * @param opts emit options.
  * @param buf the output buffer.
- * @param opts emit options.
  * @param error_on_excess Raise an error if the space in the buffer is insufficient.
  * @return a substr trimmed to the result in the output buffer. If the buffer is
  * insufficient (when error_on_excess is false), the string pointer of the
@@ -493,7 +492,6 @@ inline substr emit_yaml(Tree const& t, id_type id, substr buf, bool error_on_exc
  * @param id the node where to start emitting.
  * @param opts emit options.
  * @param buf the output buffer.
- * @param opts emit options.
  * @param error_on_excess Raise an error if the space in the buffer is insufficient.
  * @return a substr trimmed to the result in the output buffer. If the buffer is
  * insufficient (when error_on_excess is false), the string pointer of the
@@ -515,6 +513,7 @@ inline substr emit_json(Tree const& t, id_type id, substr buf, bool error_on_exc
 
 /** (1) emit YAML to the given buffer. Return a substr trimmed to the emitted YAML.
  * @param t the tree; will be emitted from the root node.
+ * @param opts emit options.
  * @param buf the output buffer.
  * @param error_on_excess Raise an error if the space in the buffer is insufficient.
  * @return a substr trimmed to the result in the output buffer. If the buffer is
@@ -533,6 +532,7 @@ inline substr emit_yaml(Tree const& t, substr buf, bool error_on_excess=true)
 }
 /** (1) emit JSON to the given buffer. Return a substr trimmed to the emitted JSON.
  * @param t the tree; will be emitted from the root node.
+ * @param opts emit options.
  * @param buf the output buffer.
  * @param error_on_excess Raise an error if the space in the buffer is insufficient.
  * @return a substr trimmed to the result in the output buffer. If the buffer is
@@ -896,6 +896,6 @@ C4_SUPPRESS_WARNING_GCC_CLANG_POP
 #undef RYML_DEPRECATE_EMIT
 #undef RYML_DEPRECATE_EMITRS
 
-#include "c4/yml/emit.def.hpp"
+#include "c4/yml/emit.def.hpp" // NOLINT
 
 #endif /* _C4_YML_EMIT_HPP_ */

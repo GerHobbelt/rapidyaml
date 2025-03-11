@@ -237,32 +237,41 @@ ExpectError::ExpectError(Tree *tree, Location loc)
     c4::yml::Callbacks tcb((void*)this, tree ? m_tree_prev.m_allocate : nullptr, tree ? m_tree_prev.m_free : nullptr, err);
     c4::yml::Callbacks gcb((void*)this, m_glob_prev.m_allocate, m_glob_prev.m_free, err);
     #endif
-    _c4dbgp("setting error callback");
     if(tree)
+    {
+        _c4dbgp("setting error callback: tree");
         tree->callbacks(tcb);
+    }
+    _c4dbgp("setting error callback: global");
     set_callbacks(gcb);
 }
 
 ExpectError::~ExpectError()
 {
     if(m_tree)
+    {
+        _c4dbgp("resetting error callback: tree");
         m_tree->callbacks(m_tree_prev);
+    }
+    _c4dbgp("resetting error callback: global");
     set_callbacks(m_tree_prev);
-    _c4dbgp("resetting error callback");
 }
 
 void ExpectError::check_success(Tree *tree, std::function<void()> fn)
 {
-    auto context = ExpectError(tree, {});
+    Location expected_location = {};
+    auto context = ExpectError(tree, expected_location);
     C4_IF_EXCEPTIONS_(try, if(setjmp(s_jmp_env_expect_error) == 0))
     {
+        _c4dbgp("check expected success");
         fn();
+        _c4dbgp("check expected success: success!");
     }
     C4_IF_EXCEPTIONS_(catch(ExpectedError const&), else)
     {
-        ;
+        FAIL() << "check expected success: failed!";
     }
-    EXPECT_FALSE(context.m_got_an_error);
+    ASSERT_FALSE(context.m_got_an_error);
 }
 
 void ExpectError::check_error(Tree const* tree, std::function<void()> fn, Location expected_location)
@@ -537,6 +546,28 @@ void test_invariants(ConstNodeRef const& n)
     {
         EXPECT_FALSE(n.val_ref().empty());
         EXPECT_FALSE(n.has_val_anchor());
+    }
+    if(n.has_key())
+    {
+        if(n.is_key_quoted())
+        {
+            EXPECT_FALSE(n.key_is_null());
+        }
+        if(n.key_is_null())
+        {
+            EXPECT_FALSE(n.is_key_quoted());
+        }
+    }
+    if(n.has_val() && n.is_val_quoted())
+    {
+        if(n.is_val_quoted())
+        {
+            EXPECT_FALSE(n.val_is_null());
+        }
+        if(n.val_is_null())
+        {
+            EXPECT_FALSE(n.is_val_quoted());
+        }
     }
     // ... add more tests here
 

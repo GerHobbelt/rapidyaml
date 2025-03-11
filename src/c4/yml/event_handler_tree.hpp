@@ -10,6 +10,7 @@
 #endif
 
 C4_SUPPRESS_WARNING_MSVC_WITH_PUSH(4702) // unreachable code
+// NOLINTBEGIN(hicpp-signed-bitwise)
 
 namespace c4 {
 namespace yml {
@@ -359,6 +360,19 @@ public:
     /** @{ */
 
 
+    C4_ALWAYS_INLINE void set_key_scalar_plain_empty() noexcept
+    {
+        _c4dbgpf("node[{}]: set key scalar plain as empty", m_curr->node_id);
+        m_curr->tr_data->m_key.scalar = {};
+        _enable_(KEY|KEY_PLAIN|KEYNIL);
+    }
+    C4_ALWAYS_INLINE void set_val_scalar_plain_empty() noexcept
+    {
+        _c4dbgpf("node[{}]: set val scalar plain as empty", m_curr->node_id);
+        m_curr->tr_data->m_val.scalar = {};
+        _enable_(VAL|VAL_PLAIN|VALNIL);
+    }
+
     C4_ALWAYS_INLINE void set_key_scalar_plain(csubstr scalar) noexcept
     {
         _c4dbgpf("node[{}]: set key scalar plain: [{}]~~~{}~~~ ({})", m_curr->node_id, scalar.len, scalar, reinterpret_cast<void const*>(scalar.str));
@@ -663,7 +677,7 @@ public:
 
 public:
 
-    C4_ALWAYS_INLINE void _set_state_(state *C4_RESTRICT s, id_type id) noexcept
+    C4_ALWAYS_INLINE void _set_state_(state *C4_RESTRICT s, id_type id) const noexcept
     {
         s->node_id = id;
         s->tr_data = m_tree->_p(id);
@@ -710,7 +724,7 @@ public:
     {
         _c4dbgp("remove speculative node");
         _RYML_CB_ASSERT(m_stack.m_callbacks, m_tree);
-        _RYML_CB_ASSERT(m_tree->callbacks(), m_tree->size() > 0);
+        _RYML_CB_ASSERT(m_tree->callbacks(), !m_tree->empty());
         const id_type last_added = m_tree->size() - 1;
         if(m_tree->has_parent(last_added))
             if(m_tree->_p(last_added)->m_type == NOTYPE)
@@ -720,7 +734,7 @@ public:
     void _remove_speculative_with_parent()
     {
         _RYML_CB_ASSERT(m_stack.m_callbacks, m_tree);
-        _RYML_CB_ASSERT(m_tree->callbacks(), m_tree->size() > 0);
+        _RYML_CB_ASSERT(m_tree->callbacks(), !m_tree->empty());
         const id_type last_added = m_tree->size() - 1;
         _RYML_CB_ASSERT(m_tree->callbacks(), m_tree->has_parent(last_added));
         if(m_tree->_p(last_added)->m_type == NOTYPE)
@@ -749,6 +763,7 @@ public:
 } // namespace yml
 } // namespace c4
 
+// NOLINTEND(hicpp-signed-bitwise)
 C4_SUPPRESS_WARNING_MSVC_POP
 
 #endif /* _C4_YML_EVENT_HANDLER_TREE_HPP_ */

@@ -4781,7 +4781,7 @@ struct GlobalAllocatorExample
         return ptr;
     }
 
-    void free(void *mem, size_t len)
+    void release(void *mem, size_t len)
     {
         CHECK((char*)mem     >= &memory_pool.front() && (char*)mem     <  &memory_pool.back());
         CHECK((char*)mem+len >= &memory_pool.front() && (char*)mem+len <= &memory_pool.back());
@@ -4801,7 +4801,7 @@ struct GlobalAllocatorExample
     }
     static void s_free(void *mem, size_t len, void *this_)
     {
-        return ((GlobalAllocatorExample*)this_)->free(mem, len);
+        return ((GlobalAllocatorExample*)this_)->release(mem, len);
     }
 
     // checking
@@ -4903,7 +4903,7 @@ struct PerTreeMemoryExample
         ryml::Callbacks cb;
         cb.m_user_data = (void*) this;
         cb.m_allocate = [](size_t len, void *, void *data){ return ((PerTreeMemoryExample*) data)->allocate(len); };
-        cb.m_free = [](void *mem, size_t len, void *data){ return ((PerTreeMemoryExample*) data)->free(mem, len); };
+        cb.m_free = [](void *mem, size_t len, void *data){ return ((PerTreeMemoryExample*) data)->release(mem, len); };
         return cb;
     }
 
@@ -4920,7 +4920,7 @@ struct PerTreeMemoryExample
         return ptr;
     }
 
-    void free(void *mem, size_t len)
+    void release(void *mem, size_t len)
     {
         CHECK((char*)mem     >= &memory_pool.front() && (char*)mem     <  &memory_pool.back());
         CHECK((char*)mem+len >= &memory_pool.front() && (char*)mem+len <= &memory_pool.back());
